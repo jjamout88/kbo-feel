@@ -1,7 +1,7 @@
 // 오프라인 캐시: 처음 한 번 열면 이후엔 인터넷 없이도 플레이 가능
-const CACHE = 'tajagyeom-v2';
+const CACHE = 'tajagyeom-v3';
 const FILES = ['./', 'index.html', 'manifest.webmanifest',
-  'js/core.js', 'js/gfx.js', 'js/scenes.js', 'js/match.js', 'js/mg_bat.js', 'js/mg_field.js', 'js/main.js',
+  'js/roster.js', 'js/core.js', 'js/gfx.js', 'js/scenes.js', 'js/match.js', 'js/mg_bat.js', 'js/mg_field.js', 'js/main.js',
   'fonts/Galmuri11-Bold.woff2', 'fonts/Galmuri11.woff2', 'fonts/Galmuri9.woff2',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });

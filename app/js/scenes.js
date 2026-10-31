@@ -6,6 +6,23 @@ const Scenes = {};
 window.Scenes = Scenes;
 const G_ = GFX;
 const look = S => ({ skin: S.me.skin, num: S.me.num });
+// 코치 튜토리얼 대사 (처음 한 번씩만. 타이틀 '튜토리얼 다시 보기'로 초기화)
+const TUT = {
+  start: ['구단주님, 첫 경기 전에 몇 가지만 알려드리겠습니다.', '경기는 대부분 전광판 빨리감기로 흘러갑니다. 구단주님이 직접 뛰는 건 "승부처"뿐입니다.', '승부처는 한 경기에 최소 3번. 타격, 수비, 홈 쇄도, 도루 중 하나가 나옵니다.'],
+  brief: ['경기 전엔 작전 카드를 한 장 고릅니다. 효과는 이번 경기에만 있습니다.', '오른쪽 위 게이지가 팬 신뢰입니다. 이기면 오르고, 실력 없이 높은 타순에 서면 떨어집니다.', '신뢰가 0이 되면 감독 권한은 제가 맡습니다. 15, 30, 45가 되면 하나씩 돌려드리죠.', '처음이시니 "타격 연습"으로 감부터 잡아보시죠. 그다음 카드를 고르고 경기 시작입니다.'],
+  c_bat: ['타석입니다. 공이 스트라이크 존에 들어오는 순간, 화면 아무 데나 탭하면 스윙합니다.', '위치는 신경 쓰지 마십시오. 타이밍이 전부입니다. 정확하면 "저스트!", 무조건 안타입니다.', '테두리가 파란 공은 볼입니다. 참으면 볼넷도 노릴 수 있죠. 선구가 높을수록 일찍 보입니다.', '오른쪽 위 번트 버튼을 누르고 기다리면 번트를 댑니다. 발이 빠르면 내야 안타도 됩니다.'],
+  c_fld_IF: ['수비 위기입니다. 땅볼이 구단주님 쪽으로 옵니다.', '화면을 누르고 있으면 누른 쪽으로 달려갑니다. 공이 지나가는 길목을 막으세요.', '잡으면 1루 송구 게이지가 나옵니다. 바늘이 초록일 때 탭. 가운데 노란 칸이면 무조건 아웃입니다.'],
+  c_fld_OF: ['수비 위기입니다. 뜬공이 구단주님 쪽으로 날아옵니다.', '화면을 누르고 있으면 누른 쪽으로 달려갑니다. 노란 점선 원이 떨어질 자리입니다.', '잡으면 홈 송구 게이지가 나옵니다. 바늘이 초록일 때 탭. 가운데 노란 칸이면 무조건 아웃입니다.'],
+  c_run: ['2루 주자입니다. 안타가 나오면 3루를 돌게 됩니다.', '3루 베이스에 링이 줄어듭니다. 링이 노래지는 순간, 3루를 밟는 순간 GO를 누르면 무조건 세이프.', '타구가 얕거나 외야 어깨가 강하면 STOP으로 3루에 멈추는 것도 방법입니다. 위쪽 힌트를 보세요.'],
+  c_steal: ['1루에서 도루를 노립니다. 투수를 잘 보십시오.', '투수가 다리를 드는 순간 "!"가 뜹니다. 그때 탭하면 스타트. 빠를수록 확실합니다.', '고개만 돌리거나 견제할 때 뛰면 견제사입니다. 참으세요.'],
+  result: ['경기 결과입니다. 오른쪽에서 팬 신뢰가 왜 오르고 내렸는지 보입니다.', '"보상 카드"를 누르면 세 장 중 한 장을 골라 바로 능력치를 올릴 수 있습니다.'],
+  manage: ['경기가 끝나면 팀 관리입니다. 타순, 기용, 훈련 세 가지입니다.', '타순: 칸을 눌러 구단주님 자리를 정합니다. 노란 테두리가 제 추천이고, 타순이 높을수록 승부처가 많아집니다.', '다만 실적보다 2칸 넘게 높이 서면 "낙하산"이라 팬 신뢰가 깎입니다.', '기용: 땀 흘리는 선수는 지친 겁니다. 한 명 쉬게 하면 팀도 강해지고 팬들도 좋아합니다.', '훈련: 포인트로 능력치를 올립니다. 팀 훈련은 팀 전력을 조금씩 올립니다.'],
+  lock: ['팬 신뢰가 바닥났습니다. 당분간 라인업은 제가 짜겠습니다. 구단주님은 9번으로 계속 뛰시고요.', '이기면 신뢰가 돌아옵니다. 15, 30, 45가 되면 타순, 기용, 훈련 순서로 돌려드리죠.'],
+  event: ['구단주님 본업 쪽 소식이군요. 고르는 대로 결과가 달라집니다.'],
+  allstar: ['올스타 브레이크입니다. 홈런 더비에서 넘긴 만큼 파워가 오릅니다. 쉬는 동안 선수들 컨디션도 회복됩니다.'],
+  post: ['가을야구입니다. 단기전에선 상대 에이스가 자주 나옵니다.', '한국시리즈를 우승하고 승부처 성공률이 60%를 넘으면 MVP입니다.'],
+};
+window.TUT = TUT;
 
 // ---------- 공통 배경/헤더 ----------
 function menuBg(c, trust = 60, dim = 0.62, theme = 'home') {
@@ -99,6 +116,7 @@ Scenes.title = () => {
       btn(c, 'cont', 98, 102, 74, 20, '이어하기', () => Flow.resume(), { kind: 'navy', disabled: !has });
       btn(c, 'ttl', 20, 125, 74, 16, `칭호 ${Meta.titles.length}/${K.TITLES.length}`, () => go(Scenes.titles()), { kind: 'ghost', f: 's' });
       btn(c, 'snd', 98, 125, 74, 16, Meta.sound ? '소리 켜짐' : '소리 꺼짐', () => { Meta.sound = Meta.sound ? 0 : 1; saveMeta(); }, { kind: 'ghost', f: 's' });
+      btn(c, 'tut', 176, 125, 74, 16, '튜토리얼 다시', () => { Meta.tut = {}; saveMeta(); toast('다음 시즌부터 코치가 다시 알려줍니다'); }, { kind: 'ghost', f: 's' });
     },
   };
 };
@@ -145,22 +163,24 @@ Scenes.create = () => {
 // 오프닝 (3컷)
 // ============================================================================
 Scenes.opening = () => {
-  const S = App.S; let i = 0, t = 0;
+  const S = App.S; let i = 0, t = 0, done = false;
+  const finish = () => { if (done) return; done = true; Flow.toBrief(); };
   const cuts = [
     { draw: c => { rect(c, 0, 0, LW, LH, P.n0); chartMonitor(c, 80, 14, 160, 82, t, 1); }, txt: '바나나스닥 선물 50배 레버리지.\n...진짜로 올랐다.' },
     { draw: c => { rect(c, 0, 0, LW, LH, P.n1); contract(c, 100, 10, t); }, txt: '통장 잔고를 보고, 그날 바로 구단을 샀다.' },
-    { draw: c => { menuBg(c, 50, 0.5); bust(c, 'coach', 2, 30, 30); bust(c, 'me', 1, 240, 30, S); }, txt: '"...구단주님이 직접 뛰신다고요?"\n"9번이면 됩니다. 일단은."' },
+    { draw: c => { menuBg(c, 50, 0.5); bust(c, 'coach', 2, 30, 30); bust(c, 'me', 1, 240, 30, S); }, txt: '"...구단주님이 직접 뛰신다고요?"\n"9번으로 뛰면 됩니다. 일단은."' },
   ];
   return {
     update(dt) { t += dt; },
     down() { },
     draw(c) {
-      cuts[i].draw(c);
+      const ci = Math.min(i, cuts.length - 1); cuts[ci].draw(c);   // 마지막 컷 이후 페이드 동안에도 마지막 컷 유지
       rect(c, 0, 104, LW, 44, 'rgba(10,14,36,0.85)'); rect(c, 0, 104, LW, 1, P.n4);
-      const n = Math.floor(t * 30); const full = cuts[i].txt; G_.textBox(c, full.slice(0, n), 16, 112, LW - 32, { col: P.w4 });
+      const n = Math.floor(t * 30); const full = cuts[ci].txt; G_.textBox(c, full.slice(0, n), 16, 112, LW - 32, { col: P.w4 });
       if (n >= full.length && (App.t * 2 | 0) % 2) text(c, '▼', LW - 16, 134, { f: 's', col: P.y3 });
-      hit('adv', 0, 0, LW, LH, () => { if (n < full.length) { t = 99; return; } if (++i >= cuts.length) Flow.toBrief(); else t = 0; });
-      btn(c, 'skip', LW - 46, 4, 40, 14, '건너뛰기', () => Flow.toBrief(), { kind: 'ghost', f: 's' });
+      if (done) return;
+      hit('adv', 0, 0, LW, LH, () => { if (n < full.length) { t = 99; return; } if (i + 1 >= cuts.length) finish(); else { i++; t = 0; } });
+      btn(c, 'skip', LW - 46, 4, 40, 14, '건너뛰기', finish, { kind: 'ghost', f: 's' });
     },
   };
 };
@@ -169,11 +189,12 @@ Scenes.opening = () => {
 // 경기 전 브리핑 (작전 카드 1/3)
 // ============================================================================
 Scenes.brief = () => {
-  const S = App.S, R = App.R; let cards, sel = -1, fx, ace;
-  return {
+  const S = App.S, R = App.R; let cards, sel = -1, fx, ace, init = false;
+  const first = S.phase === 'reg' && S.gi === 0;
+  const self = {
     enter() {
-      fx = S.phase === 'post' ? K.postFixture(S) : S.sched[S.gi];
-      cards = K.drawCards(S, R, 'tactic'); ace = App.preAce = R() < K.aceRate(S);
+      if (!init) { init = true; fx = S.phase === 'post' ? K.postFixture(S) : S.sched[S.gi]; cards = K.drawCards(S, R, 'tactic'); ace = App.preAce = R() < K.aceRate(S); }
+      if (first) Coach.once('start', TUT.start.concat(TUT.brief));
     },
     draw(c) {
       menuBg(c, S.trust, 0.6, fx.home ? 'home' : 'away');
@@ -199,10 +220,12 @@ Scenes.brief = () => {
       text(c, '작전 카드 1장 선택', 8, 95, { f: 's', col: P.n6 });
       cards.forEach((cd, i) => { const x = 6 + i * 72, y = 106; card(c, x, y, 69, 41, cd.name, cd.desc, { sel: sel === i, icon: cd.icon, band: cd.id === 'normal' ? P.n3 : P.r2 }); hit('cd' + i, x, y, 69, 41, () => { sel = i; Sound.play('card'); }); });
       btn(c, 'start', 230, 120, 84, 22, '경기 시작', () => { S.tactic = cards[Math.max(0, sel)].id; saveGame(); go(Scenes.match(fx, ace)); }, { disabled: sel < 0 });
-      btn(c, 'stand', 230, 98, 40, 16, '순위', () => go(Scenes.standings(() => go(Scenes.brief()))), { kind: 'navy', f: 's' });
-      btn(c, 'quit', 274, 98, 40, 16, '저장', () => { saveGame(); go(Scenes.title()); }, { kind: 'ghost', f: 's' });
+      if (first) btn(c, 'practice', 230, 98, 84, 16, '타격 연습', () => go(Scenes.bat({ practice: true, sit: { inn: 1, top: false, outs: 0, bases: [false, false, false], kia: 0, opp: 0 }, opp: fx.opp, theme: fx.home ? 'home' : 'away', onEnd: () => go(self) })), { kind: 'gold', f: 's' });
+      else { btn(c, 'stand', 230, 98, 40, 16, '순위', () => go(Scenes.standings(() => go(self))), { kind: 'navy', f: 's' });
+        btn(c, 'quit', 274, 98, 40, 16, '저장', () => { saveGame(); go(Scenes.title()); }, { kind: 'ghost', f: 's' }); }
     },
   };
+  return self;
 };
 const clutchRange = slot => { const nb = K.BAL.clutchByTier[slot]; const lo = Math.max(3, Math.min(...nb)), hi = Math.max(3, Math.max(...nb)); return lo === hi ? `${lo}번` : `${lo}~${hi}번`; };
 function bustMini(c, x, y) { const b = G_.bustSprite('coach', 0, 0); c.drawImage(b, 4, 0, 40, 34, x - 6, y, 40, 34); }
@@ -220,7 +243,7 @@ Scenes.result = (M) => {
       cards = K.drawCards(S, R, 'reward', M.win);
       out.titles.forEach(tt => { if (!Meta.titles.includes(tt.id)) { Meta.titles.push(tt.id); } }); saveMeta();
       Sound.play(M.win ? 'fanfare' : 'down'); if (out.locked) setTimeout(() => Sound.play('boo'), 600);
-      saveGame();
+      saveGame(); Coach.once('result', TUT.result);
     },
     update(dt) { t += dt; },
     draw(c) {
@@ -270,7 +293,7 @@ Scenes.manage = () => {
   const S = App.S, R = App.R; let tab = 'slot', snap;
   const TABS = [['slot', '타순'], ['rest', '기용'], ['train', '훈련']];
   return {
-    enter() { K.coachManage(S, R); snap = { st: { ...S.me.st }, tp: S.tp, tt: S.teamTrain }; if (!K.canEdit(S, 'slot')) tab = K.canEdit(S, 'rest') ? 'rest' : 'train'; },
+    enter() { K.coachManage(S, R); snap = { st: { ...S.me.st }, tp: S.tp, tt: S.teamTrain }; if (!K.canEdit(S, 'slot')) tab = K.canEdit(S, 'rest') ? 'rest' : 'train'; if (S.lock) Coach.once('lock', TUT.lock); else Coach.once('manage', TUT.manage); },
     draw(c) {
       menuBg(c, S.trust, 0.75);
       header(c, '팀 관리', S.phase === 'post' ? K.ROUND[S.post.round].name : `다음: ${S.gi + 1}경기`);
@@ -328,7 +351,7 @@ Scenes.manage = () => {
 Scenes.event = () => {
   const S = App.S, R = App.R; let evs, ev, picked = null, t = 0;
   return {
-    enter() { evs = K.pickEvents(S, R); ev = evs[0]; Sound.play(ev.art === 'chartDown' ? 'alarm' : 'coin'); },
+    enter() { evs = K.pickEvents(S, R); ev = evs[0]; Sound.play(ev.art === 'chartDown' ? 'alarm' : 'coin'); Coach.once('event', TUT.event); },
     update(dt) { t += dt; },
     draw(c) {
       rect(c, 0, 0, LW, LH, P.n0); header(c, '이벤트', `${S.gi}경기 종료 후`);
@@ -371,7 +394,7 @@ Scenes.standings = (back) => {
 Scenes.allstar = () => {
   const S = App.S; let stage = 0, hr = 0;
   return {
-    enter() { if (stage === 0) Sound.play('fanfare'); },
+    enter() { if (stage === 0) { Sound.play('fanfare'); Coach.once('allstar', TUT.allstar); } },
     draw(c) {
       menuBg(c, 95, 0.55); confetti(c, App.t, 20); header(c, '올스타 브레이크', '9경기 종료');
       if (stage === 0) {
@@ -393,6 +416,7 @@ Scenes.allstar = () => {
 Scenes.postIntro = (kind) => {
   const S = App.S; let t = 0;
   return {
+    enter() { if (kind === 'round') Coach.once('post', TUT.post); },
     update(dt) { t += dt; },
     draw(c) {
       menuBg(c, S.trust, 0.7);

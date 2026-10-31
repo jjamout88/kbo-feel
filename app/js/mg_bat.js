@@ -5,12 +5,12 @@
 // 존 밖 공을 치면 빗맞기 쉬움. 에이스=공 빠름·무브 큼·판정 폭 좁음. 퍼펙트(존 안 + 타이밍 정중앙) = 무조건 안타
 // ============================================================================
 Scenes.bat = (o) => {
-  const S = App.S, derby = !!o.derby, st = o.stats || K.effStats(S), ace = o.ace ? 1 : 0, tac = o.tactic || S.tactic; App.curAce = ace;
+  const S = App.S, practice = !!o.practice, derby = !!o.derby || practice, st = o.stats || K.effStats(S), ace = o.ace ? 1 : 0, tac = o.tactic || S.tactic; App.curAce = ace;
   const lefty = S.me.hand === 'L';
   const ZONE = { x0: 149, x1: 171, y0: 92, y1: 118 }, REL = { x: 160, y: 69 };
   const CONTACT_T = 0.92, LEAD = 0.085;
   const TB = window.BAL_BAT || { perf: 0.02, good: 0.11, good_hit: 0.62, qExp: 1.8, mid: 0.2, midFoul: 0.34, bloop: 0.05, weakFoul: 0.47, outZone: 0.5 };
-  const WIN = (S.easy ? 1.25 : 1) * (0.65 + 0.7 * st.con / 99) * (1 - 0.18 * ace) * (tac === 'fullswing' ? 0.85 : 1) * (derby ? 1.15 : 1);
+  const WIN = (S.easy ? 1.25 : 1) * (0.65 + 0.7 * st.con / 99) * (1 - 0.18 * ace) * (tac === 'fullswing' ? 0.85 : 1) * (o.derby ? 1.15 : 1);
   const PERF = TB.perf * WIN * WIN, GOOD = TB.good * WIN;
   const PT = [{ n: '직구', kmh: 146, dur: 0.64, brk: 0, drop: 0 }, { n: '슬라이더', kmh: 133, dur: 0.72, brk: 9, drop: 2 }, { n: '커브', kmh: 119, dur: 0.84, brk: -4, drop: 9 }, { n: '포크', kmh: 131, dur: 0.74, brk: 0, drop: 10 }];
   const FIELD = [[70, 64], [160, 61], [250, 64], [120, 76], [200, 76], [84, 96], [236, 96]];
@@ -21,10 +21,10 @@ Scenes.bat = (o) => {
   const eyeLead = () => (0.12 + 0.33 * st.eye / 99) * (tac === 'eye' ? 2 : 1);
   function say(txt, col, big, sub) { G.msg = { txt, col, big, sub, t: 0 }; }
   function newPitch() {
-    G.pitchN++; let p = derby ? PT[0] : PT[(R() * 4) | 0]; const sp = ace ? 1.12 : 1;
+    G.pitchN++; let p = o.derby ? PT[0] : PT[(R() * 4) | 0]; const sp = ace ? 1.12 : 1;
     p = { ...p, dur: p.dur / sp * (derby ? 1.08 : 1), kmh: Math.round(p.kmh * (ace ? 1.05 : 1)), brk: p.brk * (ace ? 1.3 : 1), drop: p.drop * (ace ? 1.3 : 1) };
-    let tx, ty; const inZ = derby || R() < 0.58;
-    if (inZ) { tx = ZONE.x0 + 2 + R() * (ZONE.x1 - ZONE.x0 - 4); ty = ZONE.y0 + 2 + R() * (ZONE.y1 - ZONE.y0 - 4); if (derby) { tx = 160 + (R() - 0.5) * 12; ty = 104 + (R() - 0.5) * 12; } }
+    let tx, ty; const inZ = o.derby || R() < (practice ? 0.7 : 0.58);
+    if (inZ) { tx = ZONE.x0 + 2 + R() * (ZONE.x1 - ZONE.x0 - 4); ty = ZONE.y0 + 2 + R() * (ZONE.y1 - ZONE.y0 - 4); if (o.derby) { tx = 160 + (R() - 0.5) * 12; ty = 104 + (R() - 0.5) * 12; } }
     else { const side = (R() * 4) | 0; tx = side === 0 ? ZONE.x0 - 4 - R() * 10 : side === 1 ? ZONE.x1 + 4 + R() * 10 : 152 + R() * 16; ty = side === 2 ? ZONE.y0 - 4 - R() * 8 : side === 3 ? ZONE.y1 + 4 + R() * 10 : ZONE.y0 + R() * 26; }
     G.ball = { p, t: 0, tx, ty, x: REL.x, y: REL.y, r: 0.6, inZone: tx >= ZONE.x0 - 1 && tx <= ZONE.x1 + 1 && ty >= ZONE.y0 - 1 && ty <= ZONE.y1 + 1, judged: 0 };
     G.last = p;
@@ -73,8 +73,10 @@ Scenes.bat = (o) => {
     G.hit = { kind: 'bunt', x0: b.x, y0: b.y, x: b.x, y: b.y, x1: 160 + (R() < 0.5 ? -40 : 40), y1: 112, t: 0, r: 1.3, res };
     G.ball = null; G.phase = 'buntroll'; G.pt = 0; say(res === 'BH' ? '번트 안타!' : res === 'SAC' ? '희생 번트' : '번트 아웃', res === 'GO' ? P.n6 : P.y3, 2);
   }
-  function derbyNext(isHR) { if (isHR) G.hr++; if (G.pitchN >= 10) { G.phase = 'over'; G.endT = 1.6; G.res = { derby: G.hr }; say(`홈런 ${G.hr}개!`, P.y3, 3); } else { G.phase = 'ready'; G.pt = 0; } }
+  const NP = practice ? 8 : 10;
+  function derbyNext(isHR) { if (isHR) G.hr++; if (G.pitchN >= NP) { G.phase = 'over'; G.endT = 1.6; G.res = { derby: G.hr }; say(practice ? '연습 끝!' : `홈런 ${G.hr}개!`, P.y3, 3, practice ? '이제 실전입니다' : ''); } else { G.phase = 'ready'; G.pt = 0; } }
   const self = {
+    enter() { if (!o.derby) Coach.once('c_bat', TUT.c_bat); },
     update(dt) {
       G.pt += 0; if (G.msg) G.msg.t += dt;
       if (G.freeze > 0) { G.freeze -= dt; return; }
@@ -90,7 +92,7 @@ Scenes.bat = (o) => {
         if (!b.judged && b.t >= CONTACT_T) { const j = judge(); if (j && j.type !== 'miss') { b.judged = 1; contact(j); return; } if (j) b.judged = 1; }
         if (b.t >= 1.08) {
           Sound.play('mitt'); G.ball = null; G.trail = []; const swung = G.swing >= 0 || G.bunt;
-          if (derby) { say(swung ? '헛스윙' : '…', P.w1, 1); G.phase = 'result'; G.pt = 0; G.derbyMiss = 1; }
+          if (derby) { say(swung ? '헛스윙' : b.inZone ? '스트라이크' : '볼', swung ? P.w1 : b.inZone ? P.r4 : P.w4, 1, practice ? (swung ? '타이밍을 맞춰보세요' : b.inZone ? '존 안의 공이었습니다' : '잘 참았습니다') : ''); G.phase = 'result'; G.pt = 0; G.derbyMiss = 1; }
           else if (swung || b.inZone) { G.s++; say(G.s >= 3 ? '삼진' : '스트라이크', P.r4, G.s >= 3 ? 2 : 1, G.bunt ? '번트 실패' : swung ? '헛스윙' : '루킹'); shake(1); G.phase = 'result'; G.pt = 0; }
           else { G.b++; say(G.b >= 4 ? '볼넷!' : '볼', G.b >= 4 ? P.y3 : P.w4, G.b >= 4 ? 2 : 1, '잘 골랐다'); G.phase = 'result'; G.pt = 0; }
           G.bunt = false;
@@ -129,7 +131,7 @@ Scenes.bat = (o) => {
     key(code) { if (code === 'Space') trySwing(); if (code === 'KeyB') tryBunt(); },
     draw(c) {
       G_.stadium(c, G_.THEMES[o.theme || 'home'], o.trust != null ? o.trust : S.trust, App.t, G.hit && G.hit.kind === 'HR' ? 1 : 0.1, (c2, x, y, w, h) => {
-        if (derby) { text(c2, `HR ${G.hr}`, x + w / 2, y + 2, { f: 'b', col: P.y3, a: 'c' }); text(c2, `${Math.max(0, 10 - G.pitchN)}구 남음`, x + w / 2, y + 12, { f: 's', col: P.y2, a: 'c' }); }
+        if (derby) { text(c2, practice ? '타격 연습' : `HR ${G.hr}`, x + w / 2, y + 1, { f: practice ? 's' : 'b', col: P.y3, a: 'c' }); text(c2, `${Math.max(0, NP - G.pitchN)}구 남음`, x + w / 2, y + 11, { f: 's', col: P.y2, a: 'c' }); }
         else { text(c2, 'KIA', x + 3, y + 1, { f: 's', col: P.r4 }); text(c2, sit.kia, x + 34, y + 1, { f: 's', col: P.y3, a: 'r' }); text(c2, K.TEAMS[o.opp || 'LG'].name, x + 3, y + 11, { f: 's', col: P.w2 }); text(c2, sit.opp, x + 34, y + 11, { f: 's', col: P.y3, a: 'r' }); text(c2, G.last ? G.last.kmh + 'km' : '', x + w - 3, y + 6, { f: 's', col: P.y3, a: 'r' }); }
       });
       // 불꽃
@@ -143,11 +145,11 @@ Scenes.bat = (o) => {
       if (['ready', 'windup', 'pitch'].includes(G.phase)) { c.save(); c.globalAlpha = 0.5; const z = ZONE; rect(c, z.x0, z.y0, z.x1 - z.x0, 1, P.w4); rect(c, z.x0, z.y1, z.x1 - z.x0 + 1, 1, P.w4); rect(c, z.x0, z.y0, 1, z.y1 - z.y0, P.w4); rect(c, z.x1, z.y0, 1, z.y1 - z.y0, P.w4); c.restore(); for (const [cx, cy] of [[z => z.x0, z => z.y0]]) { } }
       G.trail.forEach((p, i) => { c.save(); c.globalAlpha = (i + 1) / G.trail.length * 0.45; rect(c, p.x, p.y, 2, 2, P.w4); c.restore(); });
       const b = G.ball; const behind = b && b.t < 0.97;
-      if (b && behind) drawBall(c, b.x, b.y, b.r, !b.inZone && b.t >= 1 - eyeLead() && !derby);
+      if (b && behind) drawBall(c, b.x, b.y, b.r, !b.inZone && b.t >= 1 - eyeLead() && !o.derby);
       // 타자
       const fr = batterFrame(); const sp = G_.batterSprite(fr, look(S));
       if (lefty) { c.save(); c.translate(LW, 0); c.scale(-1, 1); c.drawImage(sp, (LW - 188) - G_.BAX, 147 - G_.BAY); c.restore(); } else c.drawImage(sp, 132 - G_.BAX, 147 - G_.BAY);
-      if (b && !behind) drawBall(c, b.x, b.y, b.r, !b.inZone && b.t >= 1 - eyeLead() && !derby);
+      if (b && !behind) drawBall(c, b.x, b.y, b.r, !b.inZone && b.t >= 1 - eyeLead() && !o.derby);
       if (G.hit) drawBall(c, G.hit.x, G.hit.y, G.hit.r);
       // 스윙 타이밍 피드백
       if (G.timing && G.swing >= 0 && G.swing < 0.9) { const good = G.timing === '저스트!'; text(c, G.timing, 160, 124, { f: 'b', col: good ? P.y3 : P.w2, a: 'c', out: P.n0 }); }
@@ -162,7 +164,7 @@ Scenes.bat = (o) => {
       }
       // 능력치 칩 + 조작 안내
       rect(c, 0, 138, 92, 10, 'rgba(10,14,36,0.7)'); text(c, `컨택${st.con} 파워${st.pow} 선구${st.eye}`, 3, 138, { f: 's', col: P.w2 });
-      if (G.pitchN <= 1 && !derby && ['ready', 'windup'].includes(G.phase)) text(c, '아무 데나 탭 = 스윙 · 파란 테두리 공은 볼', 196, 126, { f: 's', col: P.w4, a: 'c', out: P.n0 });
+      if (G.pitchN <= 1 && !o.derby && ['ready', 'windup'].includes(G.phase)) text(c, '아무 데나 탭 = 스윙 · 파란 테두리 공은 볼', 196, 126, { f: 's', col: P.w4, a: 'c', out: P.n0 });
       if (G.last && ['pitch', 'result', 'fly', 'foul'].includes(G.phase)) text(c, G.last.n, 316, 44, { f: 's', col: P.w2, a: 'r' });
       // 버튼
       const sw = G.swing >= 0 && G.swing < 0.2; G_.ell(c, 287, 120 + (sw ? 1 : 0), 22, 20, G_.PAL.red); text(c, '스윙', 287, 114 + (sw ? 1 : 0), { f: 'b', col: P.w4, a: 'c', out: P.r0 });

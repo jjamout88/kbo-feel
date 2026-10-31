@@ -17,7 +17,7 @@ const Store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
   del(k) { try { localStorage.removeItem(k); } catch (e) { } },
 };
-const Meta = Object.assign({ titles: [], runs: 0, best: null, tutorial: {}, sound: 1 }, Store.get(META_KEY) || {});
+const Meta = Object.assign({ titles: [], runs: 0, best: null, tutorial: {}, tut: {}, sound: 1 }, Store.get(META_KEY) || {});
 function saveMeta() { Store.set(META_KEY, Meta); }
 function saveGame() { if (App.S) Store.set(SAVE_KEY, App.S); }
 function loadGame() { const S = Store.get(SAVE_KEY); return S && S.v === 1 ? S : null; }
@@ -38,6 +38,7 @@ function hitTest(p) { for (let i = Input.hits.length - 1; i >= 0; i--) { const h
 cv.addEventListener('pointerdown', e => {
   e.preventDefault(); Sound.unlock(); const p = toLow(e); Input.ptrs.set(e.pointerId, p); try { cv.setPointerCapture(e.pointerId); } catch (_) { }
   const h = hitTest(p); if (h && !h.disabled) { Input.downHit = { id: h.id, pid: e.pointerId, t: App.t }; if (h.instant) { Sound.play('click'); h.fn(); Input.downHit = null; } return; }
+  if (Coach.on) return;
   App.scene && App.scene.down && App.scene.down(p);
 }, { passive: false });
 cv.addEventListener('pointermove', e => { const p = toLow(e); if (Input.ptrs.has(e.pointerId)) Input.ptrs.set(e.pointerId, p); App.scene && App.scene.move && App.scene.move(p); });
@@ -103,6 +104,32 @@ window.go = go; window.toast = toast;
 function shake(n) { App.shake = Math.max(App.shake, n); }
 window.shake = shake;
 
+// ---------- 코치 튜토리얼: 처음 한 번만, 코치가 말풍선으로 알려줌 ----------
+const Coach = {
+  q: null,
+  once(key, pages, then) {
+    Meta.tut = Meta.tut || {};
+    if (Meta.tut[key]) { if (then) then(); return false; }
+    Meta.tut[key] = 1; saveMeta(); this.q = { pages, i: 0, t: 0, then }; return true;
+  },
+  get on() { return !!this.q; },
+  step(dt) { if (this.q) this.q.t += dt; },
+  next() { const q = this.q; if (!q) return; const full = q.pages[q.i]; if (q.t * 40 < full.length) { q.t = 99; return; } q.i++; q.t = 0; if (q.i >= q.pages.length) { this.q = null; if (q.then) q.then(); } },
+  draw(c) {
+    const q = this.q; if (!q) return;
+    c.save(); c.globalAlpha = 0.55; rect(c, 0, 0, LW, LH, P.n0); c.restore();
+    c.drawImage(GFX.bustSprite('coach', q.i === q.pages.length - 1 ? 1 : 0, 0), 4, 88);
+    GFX.panel(c, 54, 92, 262, 52, { bg: P.c3, br: P.c1, dk: P.c0 });
+    GFX.panel(c, 60, 84, 34, 13, { bg: P.n2, br: P.n4 }); text(c, '코치', 77, 86, { f: 's', a: 'c' });
+    const full = q.pages[q.i]; const shown = full.slice(0, Math.floor(q.t * 40));
+    GFX.textBox(c, shown, 62, 99, 246, { col: P.n1, lh: 13 });
+    text(c, `${q.i + 1}/${q.pages.length}`, 310, 134, { f: 's', col: P.c1, a: 'r' });
+    if (shown.length >= full.length && (App.t * 2 | 0) % 2) text(c, '▼', 276, 134, { f: 's', col: P.r2 });
+    Input.hits.push({ id: 'coach', x: 0, y: 0, w: LW, h: LH, fn: () => Coach.next() });
+  },
+};
+window.Coach = Coach;
+
 // ---------- 루프 ----------
 let last = performance.now(), acc = 0; const DT = 1 / 60;
 function frame(now) {
@@ -113,7 +140,8 @@ function frame(now) {
 function step(dt) {
   App.t += dt;
   if (App.fadeDir) { App.fade += dt * 5 * App.fadeDir; if (App.fade >= 1 && App.fadeDir > 0) { App.fade = 1; App.fadeDir = -1; App.scene = App.next; App.next = null; App.scene.enter && App.scene.enter(); } if (App.fade <= 0 && App.fadeDir < 0) { App.fade = 0; App.fadeDir = 0; } }
-  if (App.scene && App.scene.update) App.scene.update(dt);
+  Coach.step(dt);
+  if (App.scene && App.scene.update && !(Coach.on && !App.fadeDir)) App.scene.update(dt);
   App.shake = Math.max(0, App.shake - dt * 25); App.flash = Math.max(0, App.flash - dt * 4);
   if (App.toast) { App.toast.t += dt; if (App.toast.t > 2.2) App.toast = null; }
 }
@@ -121,6 +149,7 @@ function render() {
   Input.hits = [];
   rect(L, 0, 0, LW, LH, P.n0);
   if (App.scene && App.scene.draw) App.scene.draw(L);
+  if (!App.fadeDir || App.fade < 0.5) Coach.draw(L);
   if (App.toast) { const T = App.toast, a = Math.min(1, T.t * 6, (2.2 - T.t) * 4); L.save(); L.globalAlpha = a; const w = GFX.tw(T.txt, 'b') + 16; GFX.panel(L, LW / 2 - w / 2, 4, w, 18, { bg: P.n1 }); text(L, T.txt, LW / 2, 8, { f: 'b', col: T.col, a: 'c' }); L.restore(); }
   if (App.flash > 0) { L.save(); L.globalAlpha = Math.min(0.85, App.flash); rect(L, 0, 0, LW, LH, P.c4); L.restore(); }
   if (App.fade > 0) { L.save(); L.globalAlpha = App.fade; rect(L, 0, 0, LW, LH, P.n0); L.restore(); }

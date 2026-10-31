@@ -51,18 +51,18 @@ K.TEAMS = {
 K.TEAM_IDS = Object.keys(K.TEAMS);
 K.STADIUM = { KIA: '광주', LG: '잠실', '두산': '잠실', '삼성': '대구', KT: '수원', SSG: '인천', '롯데': '사직', '한화': '대전', NC: '창원', '키움': '고척' };
 
-// 기아 동료 (가상 이름. 능력치 분포만 2026 기아 기록을 따름)
-K.MATES = [
-  { name: '류한결', pos: 'CF', ovr: 72, role: 'spd' },
-  { name: '오세진', pos: '2B', ovr: 78, role: 'con' },
-  { name: '강태윤', pos: '3B', ovr: 92, role: 'pow' },
-  { name: '브래넌', pos: '1B', ovr: 86, role: 'pow' },
-  { name: '표재석', pos: 'RF', ovr: 80, role: 'pow' },
-  { name: '문지후', pos: 'C', ovr: 70, role: 'eye' },
-  { name: '백승호', pos: 'LF', ovr: 66, role: 'con' },
-  { name: '서도윤', pos: 'DH', ovr: 62, role: 'pow' },
-];
-K.BENCH = ['남궁현', '진우람', '하석주', '탁민규'];
+// 선수 명단: 2026 스탯티즈 기반 (js/roster.js). 명단·타순·중계엔 실명, 대사·헤드라인엔 실명 안 씀
+K.ROSTER = (typeof module !== 'undefined' && module.exports) ? require('./roster.js') : root.ROSTER;
+const findP = (team, name) => K.ROSTER[team].find(p => p.name === name) || { name, pos: 'DH', ovr: 50 };
+// 기아 주전 8명 (구단주가 유격수 = 기아 유격수 공백을 메움). 외야를 고르면 김호령 대신 데일이 유격수
+K.MATE_NAMES = ['김도영', '나성범', '한준수', '카스트로', '김선빈', '박재현', '김호령', '박정우'];
+K.MATES = K.MATE_NAMES.map(n => { const p = findP('KIA', n); return { name: p.name, pos: n === '박정우' ? 'DH' : p.pos, ovr: p.ovr }; });
+K.BENCH = ['아데를린', '박상준', '김태군', '오선우'];
+// 상대 타선 9명: 종합 순으로 좋은 타자부터 3·4·2·5·1·6·7·8·9번
+K.oppLineup = function (team) {
+  const ps = K.ROSTER[team].slice(0, 9); const order = new Array(9); const pref = [3, 4, 2, 5, 1, 6, 7, 8, 9];
+  ps.forEach((p, i) => { order[pref[i] - 1] = p; }); return order;
+};
 
 K.STATS = ['con', 'pow', 'eye', 'spd', 'def'];
 K.STAT_KO = { con: '컨택', pow: '파워', eye: '선구', spd: '주력', def: '수비' };
@@ -84,7 +84,7 @@ K.newSeason = function (opt) {
     flags: { parachuteGames: 0, lockedGames: 0, restMe: 0, mulCount: 0, levWin: 0, everLocked: 0, derbyHR: 0 },
     post: null, ending: null, titles: [], headlines: [],
   };
-  if (S.me.pos === 'OF') S.mates.find(m => m.pos === 'CF').pos = 'SS';
+  if (S.me.pos === 'OF') { const i = S.mates.findIndex(m => m.name === '김호령'); const d = findP('KIA', '데일'); S.mates[i] = { name: d.name, pos: 'SS', ovr: d.ovr, consec: 0, tired: false }; }
   K.TEAM_IDS.forEach(t => { S.W[t] = 0; S.L[t] = 0; });
   S.sched = K.makeSchedule(K.rng(S.rs));
   return S;
@@ -160,7 +160,7 @@ class Match {
     this.score = { kia: 0, opp: 0 }; this.line = { kia: [], opp: [] }; this.hits = { kia: 0, opp: 0 }; this.halfRuns = 0;
     this.bi = { kia: (S.slot) % 9, opp: 0 };   // 경기 시작 타자: 1번. (bi는 0-index 타순)
     this.bi.kia = 0;
-    this.order = K.lineup(S);
+    this.order = K.lineup(S); this.oppOrder = K.oppLineup(this.opp);
     this.queue = []; this.over = false; this.halfOpen = false; this.pending = null; this.awaiting = null;
     this.my = { pa: 0, ab: 0, h: 0, hr: 0, rbi: 0, bb: 0, k: 0, sb: 0, r: 0, cl: [], gw: false };
     this.moments = []; this.lead = null; this.events = 0;
@@ -186,7 +186,7 @@ class Match {
   get nClutch() { return this.my.cl.length; }
   push(e) { this.queue.push(e); }
   batterName(side) {
-    if (side === 'opp') return `${this.bi.opp + 1}번 타자`;
+    if (side === 'opp') { const p = this.oppOrder[this.bi.opp]; return p ? p.name : `${this.bi.opp + 1}번 타자`; }
     const p = this.order[this.bi.kia]; return p.me ? this.S.me.name : p.name;
   }
   // 자동 타석 출루 확률

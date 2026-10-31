@@ -62,6 +62,7 @@ Scenes.field = (o) => {
   }
   let ptr = null;
   return {
+    enter() { Coach.once('c_fld_' + (IF ? 'IF' : 'OF'), TUT['c_fld_' + (IF ? 'IF' : 'OF')]); },
     update(dt) {
       G.t += dt; if (G.msg) G.msg.t += dt;
       if (G.phase === 'pre') { if (G.t > 0.7) { G.phase = 'live'; G.t = 0; Sound.play(IF ? 'ttak' : 'kkang'); } return; }
@@ -133,6 +134,7 @@ Scenes.run = (o) => {
     G.dec = { go: true, perfect, safe: R() < p }; G.msg = { txt: perfect ? 'PERFECT 스타트!' : 'GO!', col: P.y3, big: 2, t: 0 }; Sound.play(perfect ? 'kkang' : 'whoosh');
   }
   return {
+    enter() { Coach.once('c_run', TUT.c_run); },
     update(dt) {
       G.t += dt; if (G.msg) G.msg.t += dt;
       if (G.phase === 'pre') { if (G.t > 0.6) { G.phase = 'live'; G.t = 0; Sound.play('ttak', 0.7); } return; }
@@ -195,6 +197,7 @@ Scenes.steal = (o) => {
     G.tap = { perfect, safe: R() < p, at: G.t }; G.phase = 'running'; G.msg = { txt: perfect ? 'PERFECT 스타트!' : '스타트!', col: P.y3, big: 2, t: 0 }; Sound.play(perfect ? 'kkang' : 'whoosh');
   }
   return {
+    enter() { Coach.once('c_steal', TUT.c_steal); },
     update(dt) {
       G.t += dt; if (G.msg) G.msg.t += dt; const go = acts[acts.length - 1];
       if (G.phase === 'live') { const a = curAct(); if (a !== G.act) { G.act = a; if (a && a.kind === 'go') Sound.play('tick'); if (a && a.kind === 'pick') Sound.play('whoosh'); }
