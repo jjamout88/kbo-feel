@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>KIA 타격감 튜너</title>
+<style>@font-face{font-family:GB;src:url(Galmuri11-Bold.ttf)}@font-face{font-family:G;src:url(Galmuri11.ttf)}@font-face{font-family:G9;src:url(Galmuri9.ttf)}
+html,body{margin:0;height:100%;background:#0a0d1c;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;image-rendering:pixelated;touch-action:none;max-width:100vw;max-height:100vh;aspect-ratio:844/390;width:100vw;height:auto}
+@media (min-aspect-ratio:844/390){canvas{height:100vh;width:auto}}
+#gear{position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:5;width:40px;height:32px;font:18px G;background:#16265a;color:#fff;border:2px solid #4a6ab8;border-radius:6px}
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(330px,62vw);z-index:6;background:rgba(14,26,64,.95);color:#fff;font:12px G;overflow-y:auto;padding:8px 10px;box-sizing:border-box;display:none;touch-action:pan-y;border-left:2px solid #4a6ab8}
+#panel.open{display:block}#panel h3{font:13px GB;margin:2px 0 6px;color:#ffe060}#panel h4{font:11px GB;margin:10px 0 4px;color:#86c8f0}
+.r{display:flex;align-items:center;gap:6px;margin:5px 0}.r label{flex:0 0 92px}.r input[type=range]{flex:1;height:26px}.r b{flex:0 0 44px;text-align:right;color:#ffe060;font-weight:normal}
+.sm .r{margin:3px 0;font-size:11px}.sm .r input[type=range]{height:20px}
+button.b{font:12px GB;background:#2a4a9a;color:#fff;border:1px solid #86c8f0;border-radius:4px;padding:6px 8px;margin:3px 2px 0 0}
+textarea{width:100%;height:70px;font:11px monospace;background:#0a0d1c;color:#fff;border:1px solid #4a6ab8;box-sizing:border-box;margin-top:4px;touch-action:auto}
+select{font:12px G}
+</style></head>
+<body><div id="wrap"><canvas id="c" width="844" height="390"></canvas></div>
+<button id="gear">⚙</button>
+<div id="panel"><h3>타격감 튜너 <button class="b" id="close" style="float:right;padding:2px 8px">닫기</button></h3>
+<div id="main"></div>
+<h4>그 외</h4><div id="sec" class="sm"></div>
+<button class="b" id="copy">현재 값 복사</button><button class="b" id="reset">기본값</button><button class="b" id="apply">붙여넣기 적용</button>
+<textarea id="out" placeholder="여기에 값이 나와. 붙여넣고 '붙여넣기 적용' 누르면 돼"></textarea>
+</div>
+<script src="game.js"></script>
+<script>
+const MAIN=[['speed','공 속도',.5,1.8,.05,'x'],['cursor','미트 커서 크기',.5,2,.05,'x'],['perfect','퍼펙트 타이밍 폭',10,80,1,'ms'],['hitstop','히트스톱 길이',0,300,5,'ms'],['shake','화면 흔들림',0,3,.1,'x'],['exitv','타구 속도',.5,2,.05,'x']];
+const SEC=[['vol','소리 크기',0,1,.05,''],['contact','타자 컨택',1,99,1,''],['power','타자 파워',1,99,1,''],['pitcher','상대 투수',1,99,1,'']];
+function save(){localStorage.setItem('kboFeel',JSON.stringify(T))}
+function row(host,[k,lab,mn,mx,st,u]){const d=document.createElement('div');d.className='r';d.innerHTML=`<label>${lab}</label><input type=range min=${mn} max=${mx} step=${st} id=s_${k}><b id=v_${k}></b>`;host.appendChild(d);
+ const i=d.querySelector('input'),v=d.querySelector('b');const upd=()=>{v.textContent=T[k]+u};i.value=T[k];upd();i.addEventListener('input',()=>{T[k]=+i.value;upd();save()})}
+MAIN.forEach(r=>row(main,r));
+const sd=document.createElement('div');sd.className='r';sd.innerHTML='<label>타격음</label><select id=snd><option value=kkang>금속 깡~!</option><option value=ttak>나무 딱!</option></select>';sec.appendChild(sd);
+snd.value=T.snd;snd.onchange=()=>{T.snd=snd.value;save()};SEC.forEach(r=>row(sec,r));
+const pd=document.createElement('div');pd.className='r';pd.innerHTML='<label>타자 프리셋</label><button class=b id=pS>강타자 99</button><button class=b id=pW>약타자 25</button>';sec.appendChild(pd);
+const pd2=document.createElement('div');pd2.className='r';pd2.innerHTML='<label>투수 프리셋</label><button class=b id=pA>에이스 95</button><button class=b id=pN>보통 50</button>';sec.appendChild(pd2);
+function setv(o){Object.assign(T,o);save();for(const k in T){const i=document.getElementById('s_'+k);if(i){i.value=T[k];i.dispatchEvent(new Event('input'))}}snd.value=T.snd}
+pS.onclick=()=>setv({contact:99,power:99});pW.onclick=()=>setv({contact:25,power:25});pA.onclick=()=>setv({pitcher:95});pN.onclick=()=>setv({pitcher:50});
+const txt=()=>Object.keys(TDEF).map(k=>k+'='+T[k]).join(', ');
+copy.onclick=()=>{out.value=txt();out.select();try{navigator.clipboard.writeText(out.value)}catch(e){}try{document.execCommand('copy')}catch(e){}};
+reset.onclick=()=>setv({...TDEF});
+apply.onclick=()=>{const o={};out.value.split(/[,\n]/).forEach(p=>{const [k,v]=p.split('=').map(x=>x&&x.trim());if(k in TDEF&&v!=null)o[k]=k=='snd'?v:+v});setv(o)};
+gear.onclick=()=>panel.classList.add('open');close.onclick=()=>panel.classList.remove('open');
+['pointerdown','touchstart'].forEach(e=>panel.addEventListener(e,ev=>ev.stopPropagation()));
+</script></body></html>
