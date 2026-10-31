@@ -31,11 +31,10 @@ const B = K.BAL = {
   statPerTp: 2,
   cheerBuff: 0.04,
   trust: { start: 50, win: 5, star: 4, care: 2, bad: -8, streak: -4, parachute: -6, unlock: [15, 30, 45] },
-  postMatch: { wc: 0.0, semi: 0.0 },
 };
 
 // ---------- 팀 ----------
-// 상대 구단 전력은 2026 스탯티즈 기반 players_2027.json strength 그대로. 선수 실명은 화면에 안 씀.
+// 상대 구단 전력은 2026 스탯티즈 기반 players_2027.json strength 그대로 (sim/players_2027.json)
 K.TEAMS = {
   KIA: { name: 'KIA', str: 0.44, c: '#d8283a', d: '#7a1222' },
   LG: { name: 'LG', str: 0.512, c: '#b0204a', d: '#3a1020' },

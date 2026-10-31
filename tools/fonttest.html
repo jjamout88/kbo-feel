@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><style>@font-face{font-family:GB;src:url(../app/fonts/Galmuri11-Bold.woff2)}@font-face{font-family:G;src:url(../app/fonts/Galmuri11.woff2)}@font-face{font-family:G9;src:url(../app/fonts/Galmuri9.woff2)}
+body{margin:0;background:#222}canvas{image-rendering:pixelated}</style><canvas id=c width=320 height=120></canvas><script>
+Promise.all(['11px GB','11px G','9px G9'].map(f=>document.fonts.load(f))).then(()=>{const c=document.getElementById('c').getContext('2d');c.fillStyle='#123';c.fillRect(0,0,320,120);
+let y=2;for(const f of ['11px GB','12px GB','11px G','12px G','9px G9','10px G9']){c.font=f;c.fillStyle='#fff';c.textBaseline='top';c.fillText(f+' 경기 시작 취소 특타 팬 신뢰 TIGERS 바나나스닥',2,y);y+=parseInt(f)+6}
+const d=c.getImageData(0,0,320,120);let part=0;for(let i=3;i<d.data.length;i+=4)if(d.data[i]>0&&d.data[i]<255)part++;document.title='partial:'+part;
+const C=document.getElementById('c');C.style.width='1280px';window.done=1})</script>

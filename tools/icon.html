@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><style>@font-face{font-family:GB;src:url(../app/fonts/Galmuri11-Bold.woff2)}@font-face{font-family:G;src:url(../app/fonts/Galmuri11.woff2)}@font-face{font-family:G9;src:url(../app/fonts/Galmuri9.woff2)}body{margin:0}</style>
+<canvas id=c width=64 height=64></canvas><script src="../app/js/roster.js"></script><script src="../app/js/core.js"></script><script src="../app/js/gfx.js"></script><script>
+Promise.all(['12px GB'].map(f=>document.fonts.load(f))).then(()=>{
+ const c=document.getElementById('c').getContext('2d');c.imageSmoothingEnabled=false;const {P}=GFX;
+ // 배경: 밤하늘 → 잔디
+ for(let y=0;y<64;y++){c.fillStyle=y<34?[P.n0,P.n1,P.s1,P.s2,P.s3][Math.min(4,Math.floor(y/7))]:(Math.floor((y-34)/5)&1?P.g3:P.g2);c.fillRect(0,y,64,1)}
+ c.fillStyle=P.y4;[[6,5],[54,9],[48,3],[12,14],[58,20]].forEach(([x,y])=>c.fillRect(x,y,1,1));
+ const sp=GFX.batterSprite('idle0',{skin:0,num:1});
+ // 헬멧+몸통 부분 잘라서 크게(1:1)
+ c.drawImage(sp,0,0,88,82,32-GFX.BAX+2,66-GFX.BAY,88,82);
+ window.done=1});
+</script>

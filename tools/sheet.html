@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><style>@font-face{font-family:GB;src:url(../app/fonts/Galmuri11-Bold.woff2)}@font-face{font-family:G;src:url(../app/fonts/Galmuri11.woff2)}@font-face{font-family:G9;src:url(../app/fonts/Galmuri9.woff2)}
+body{margin:0;background:#222}canvas{image-rendering:pixelated;display:block}</style>
+<canvas id=c></canvas><script src="../app/js/roster.js"></script><script src="../app/js/core.js"></script><script src="../app/js/gfx.js"></script><script>
+Promise.all(['11px GB','11px G','9px G9'].map(f=>document.fonts.load(f))).then(()=>{
+const {LW,LH,P,mkc,rect,text}=GFX;const W=640,H=520;const [s,c]=mkc(W,H);rect(c,0,0,W,H,'#2a3348');
+let x=4;for(const f of ['idle0','idle1','load','sw1','sw2','sw3','sw4','bunt','joy','sad']){const sp=GFX.batterSprite(f,{skin:0,num:7});c.drawImage(sp,x,4);text(c,f,x,82,{f:'s'});x+=90;}
+x=4;for(const f of ['set','lift','stride','rel','fol','idle']){c.drawImage(GFX.pitcherSprite(f,'LG'),x,92);x+=26}
+x=170;let t=0;for(const d of [0,Math.PI/2,Math.PI,-Math.PI/2]){for(const fr of [0,1,2]){GFX.drawTop(c,x,104,d,fr,GFX.TOP_KIA);x+=14}}
+GFX.drawTop(c,x+6,104,0.4,0,GFX.TOP_KIA,0,{dive:1});GFX.drawTop(c,x+24,104,-1,0,GFX.topTeam('삼성'),0,{throw:1});
+x=4;for(const [w,m] of [['me',0],['me',1],['me',2],['coach',0],['coach',1],['fan',1],['press',0]]){c.drawImage(GFX.bustSprite(w,m,0),x,108);x+=50}
+x=360;for(const k of Object.keys({lock:1,up:1,dn:1,star:1,ball:1,coin:1,bed:1,sweat:1,fire:1,crown:1,bat:1,glove:1,shoe:1,eye:1,bunt:1,cap:1,mic:1,chart:1})){GFX.icon(c,k,x,110);x+=12;if(x>620){x=360}}
+const [st,sc]=mkc(LW,LH);GFX.stadium(sc,GFX.THEMES.home,70,0,0);sc.drawImage(GFX.pitcherSprite('set','LG'),148,58);sc.drawImage(GFX.batterSprite('idle0',{skin:0,num:7}),132-GFX.BAX,147-GFX.BAY);c.drawImage(st,0,168);
+const [s2,c2]=mkc(LW,LH);GFX.stadium(c2,GFX.THEMES.away,15,0,0);c.drawImage(s2,320,168);
+const fw=GFX.fieldWorld();c.drawImage(fw,80,160,320,200,0,318,320,200);
+GFX.panel(c,330,322,140,60);text(c,'팬 신뢰 72',338,330,{f:'b'});GFX.bar(c,338,346,120,5,72,100,P.up);
+GFX.button(c,340,360,60,16,'경기 시작');GFX.button(c,404,360,60,16,'취소',{kind:'navy'});GFX.button(c,480,360,60,16,'카드',{kind:'gold'});
+GFX.paper(c,480,322,70,34);text(c,'특타 1시간',515,328,{f:'b',col:P.n1,a:'c'});GFX.badge(c,'KIA',560,322);GFX.badge(c,'LG',560,338);GFX.badge(c,'한화',592,322);
+GFX.bases(c,500,400,[1,0,1]);GFX.bso(c,520,392,2,1,1);
+document.getElementById('c').width=W*2;document.getElementById('c').height=H*2;const C=document.getElementById('c').getContext('2d');C.imageSmoothingEnabled=false;C.drawImage(s,0,0,W*2,H*2);window.done=1});
+</script>
