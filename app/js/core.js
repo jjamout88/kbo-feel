@@ -51,7 +51,7 @@ K.TEAMS = {
 K.TEAM_IDS = Object.keys(K.TEAMS);
 K.STADIUM = { KIA: '광주', LG: '잠실', '두산': '잠실', '삼성': '대구', KT: '수원', SSG: '인천', '롯데': '사직', '한화': '대전', NC: '창원', '키움': '고척' };
 
-// 선수 명단: 2026 스탯티즈 기반 (js/roster.js). 명단·타순·중계엔 실명, 대사·헤드라인엔 실명 안 씀
+// 선수 명단: 2026 스탯티즈 기반 (js/roster.js). 명단·중계·대사·헤드라인 모두 실명
 K.ROSTER = (typeof module !== 'undefined' && module.exports) ? require('./roster.js') : root.ROSTER;
 const findP = (team, name) => K.ROSTER[team].find(p => p.name === name) || { name, pos: 'DH', ovr: 50 };
 // 기아 주전 8명 (구단주가 유격수 = 기아 유격수 공백을 메움). 외야를 고르면 김호령 대신 데일이 유격수
@@ -163,7 +163,7 @@ class Match {
     this.order = K.lineup(S); this.oppOrder = K.oppLineup(this.opp);
     this.queue = []; this.over = false; this.halfOpen = false; this.pending = null; this.awaiting = null;
     this.my = { pa: 0, ab: 0, h: 0, hr: 0, rbi: 0, bb: 0, k: 0, sb: 0, r: 0, cl: [], gw: false };
-    this.moments = []; this.lead = null; this.events = 0;
+    this.moments = []; this.lead = null; this.events = 0; this.mateHR = []; this.oppHR = []; this.mateRBI = {};
     this.plan = this.makePlan();
     this.extraDone = false; this.ks = !!(o.post && o.post.round === 'ks');
   }
@@ -250,6 +250,8 @@ class Match {
     if (force && res === 'BB') res = '1B';
     const r = this.apply(res, side, name, { me: isMe });
     if (isMe) this.tallyMe(res, r.runs, false);
+    if (res === 'HR' && !isMe) (side === 'kia' ? this.mateHR : this.oppHR).push({ name, runs: r.runs, inn: this.inn });
+    if (r.runs && side === 'kia' && !isMe) this.mateRBI[name] = (this.mateRBI[name] || 0) + r.runs;
     this.bi[side] = (this.bi[side] + 1) % 9;
     return { type: 'pa', side, txt: r.txt, runs: r.runs, me: isMe, res };
   }
@@ -581,12 +583,19 @@ K.checkTitles = function (S) { const got = []; K.TITLES.forEach(t => { if (!S.ti
 // ---------- 헤드라인 ----------
 K.headline = function (S, M, out, R) {
   const me = S.me.name, opp = M.opp;
-  if (out.locked) return pick(R, ['팬들, 구단주 퇴진 요구', '관중석에 "감독 바꿔라" 걸개', '구단주 권한, 코치진에 넘어가']);
+  const mateHR = M.mateHR.slice().sort((a, b) => b.runs - a.runs)[0], oppHR = M.oppHR.slice().sort((a, b) => b.runs - a.runs)[0];
+  const topRBI = Object.entries(M.mateRBI).sort((a, b) => b[1] - a[1])[0];
+  const star = K.MATES[0].name;   // 팀 간판 (김도영)
+  if (out.locked) return pick(R, ['팬들, 구단주 퇴진 요구', '관중석에 "감독 바꿔라" 걸개', `"${star}가 아깝다" 팬들 성토`]);
   if (out.unlocked) return `구단주, ${out.unlocked} 권한 되찾았다`;
   if (M.rival && M.win) return pick(R, [`라이벌전 승리, 관중석 만원`, `${opp} 잡았다, 광주가 들썩`]);
-  if (M.win && M.my.gw) return pick(R, [`구단주의 결승타, 팬들 "인정"`, `${me}, 돈으로 산 자리 아니었다`, `"구단주 맞아?" ${me} 결승타`]);
+  if (M.win && M.my.gw) return pick(R, [`구단주의 결승타, 팬들 "인정"`, `${me}, 돈으로 산 자리 아니었다`, `"구단주 맞아?" ${me} 결승타`, `${star} "구단주님 타격, 저보다 낫네요"`]);
+  if (M.win && M.my.hr && mateHR) return `${mateHR.name}·${me} 쌍포, 타이거즈 대승`;
   if (M.win && M.my.hr) return pick(R, [`익절은 홈런으로, ${me} 아치`, `${me} 홈런, 바나나스닥보다 높이`]);
-  if (K.isParachute(S) && !M.win) return pick(R, ['구단주 낙하산 4번 타자', `팬들 "${me} 타순 내려라"`]);
+  if (M.win && mateHR) return pick(R, [`${mateHR.name} 홈런포, 타이거즈 승리`, `${mateHR.name}의 한 방, 구단주는 박수만`, `${mateHR.name} ${mateHR.inn}회 아치, 광주가 들썩`]);
+  if (M.win && topRBI && topRBI[1] >= 2) return pick(R, [`${topRBI[0]} ${topRBI[1]}타점, 타이거즈 승리`, `${topRBI[0]} 해결사 본능, ${opp} 제압`]);
+  if (K.isParachute(S) && !M.win) return pick(R, ['구단주 낙하산 4번 타자', `팬들 "${me} 타순 내려라"`, `"4번은 ${star} 자리" 팬들 분노`]);
+  if (!M.win && oppHR) return pick(R, [`${oppHR.name}에게 한 방, 타이거즈 패배`, `${opp} ${oppHR.name} 홈런에 무릎`]);
   if (S.streakL >= 3) return pick(R, [`팬들 "감독은 누구냐"…감독은 구단주`, `타이거즈 ${S.streakL}연패, 침묵의 광주`]);
   if (!M.win && S.slot === 9) return pick(R, ['구단주, 오늘도 9번', `${me}, 9번에서 고개 숙여`]);
   if (M.win) return pick(R, ['타이거즈, 또 이겼다', `${opp} 상대로 승리`, '광주의 밤, 함성으로 가득']);
