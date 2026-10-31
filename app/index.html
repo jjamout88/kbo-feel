@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>나는 타자겸 감독이 되었습니다</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#0a0e24">
+<meta name="apple-mobile-web-app-title" content="타자겸 감독">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>
+@font-face{font-family:GB;src:url(fonts/Galmuri11-Bold.woff2) format('woff2')}
+@font-face{font-family:G;src:url(fonts/Galmuri11.woff2) format('woff2')}
+@font-face{font-family:G9;src:url(fonts/Galmuri9.woff2) format('woff2')}
+:root{--bg:#0a0e24;--fg:#e6ebf8;--accent:#c8203a;color-scheme:dark}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-touch-callout:none}
+#wrap{position:fixed;inset:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;background:var(--bg)}
+#nameIn{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0}
+#rot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);color:var(--fg);font:16px G,sans-serif;text-align:center;z-index:9;padding:0 24px}
+#rot b{font:20px GB,sans-serif;color:#ff8080}
+#rot i{display:block;width:64px;height:40px;border:3px solid #7d95e0;border-radius:8px;animation:r 1.6s ease-in-out infinite}
+@keyframes r{0%,30%{transform:rotate(-90deg)}60%,100%{transform:rotate(0)}}
+@media (orientation:portrait) and (max-width:900px){#rot{display:flex}}
+@media (prefers-reduced-motion:reduce){#rot i{animation:none}}
+</style></head>
+<body>
+<div id="wrap"><canvas id="c" aria-label="야구 게임 화면"></canvas></div>
+<input id="nameIn" maxlength="5" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="등록명">
+<div id="rot"><i></i><b>가로로 돌려주세요</b><span>나는 타자겸 감독이 되었습니다는<br>가로 화면 전용이에요</span></div>
+<script src="js/core.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/match.js"></script>
+<script src="js/mg_bat.js"></script>
+<script src="js/mg_field.js"></script>
+<script src="js/main.js"></script>
+<script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body></html>
