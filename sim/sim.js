@@ -14,8 +14,8 @@ function pSucc(kind, st, skill, ace, cheer) {
 const MEAS = {
   bat: { weak: [0.44, 0.46, 0.53], avg: [0.5, 0.62, 0.68], strong: [0.82, 0.85, 0.92], ace: 0.12 },   // v1.6 판정 넉넉하게
   fld: { weak: [0.61, 0.74, 0.75], avg: [0.95, 0.98, 0.99], strong: [0.99, 1.0, 1.0], ace: 0.08 },   // v1.3 탭 이동·카메라 고정 (사람은 이보다 낮을 것으로 보고 약간 깎음)
-  run: { weak: [0.15, 0.35, 0.42], avg: [0.38, 0.42, 0.50], strong: [0.95, 0.95, 0.95], ace: 0.0 },
-  steal: { weak: [0.30, 0.38, 0.57], avg: [0.50, 0.57, 0.70], strong: [0.72, 0.80, 0.92], ace: 0.2 },
+  run: { weak: [0.52, 0.57, 0.7], avg: [0.85, 0.9, 0.95], strong: [0.97, 0.98, 0.99], ace: 0.0 },   // v1.7 슬로모션·지금! (봇은 100%, 사람 보정해서 깎음)
+  steal: { weak: [0.55, 0.7, 0.75], avg: [0.85, 0.9, 0.95], strong: [0.97, 0.98, 0.99], ace: 0.1 },   // v1.7 클로즈업·아직!
 };
 function pMeas(kind, st, skillName, ace, cheer) {
   const stat = { bat: K.batOvr({ st }), fld: st.def, run: st.spd, steal: st.spd }[kind]; const t = MEAS[kind][skillName];

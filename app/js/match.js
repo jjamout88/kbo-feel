@@ -6,8 +6,8 @@ const KIND_KO = { bat: '타격', fld: '수비 위기', run: '홈 쇄도', steal:
 const HOWTO = {
   bat: '줄어드는 원이 가운데 원에 닿을 때 탭 (노랑 = 저스트).\n파란 테두리 공은 볼. 퍼펙트 타이밍은 무조건 안타.',
   fld: '노란 원을 탭하면 그쪽으로 달려감.\n잡으면 송구 게이지를 초록에서 탭.',
-  run: '3루를 밟는 순간 GO를 누르면 퍼펙트.\n위험하면 STOP.',
-  steal: '투수가 다리를 들 때 탭. 고개만 돌릴 땐 참기.',
+  run: '"지금!"이 뜰 때 GO (3루 근처는 슬로모션).\n위험하면 STOP.',
+  steal: '"지금!"이 뜨면 탭 (노란 링 = 퍼펙트).\n일찍 눌러도 괜찮지만 견제구 땐 참기.',
 };
 function sitText(s) {
   const b = s.bases; const runners = b[0] && b[1] && b[2] ? '만루' : b.some(Boolean) ? [b[0] ? '1' : '', b[1] ? '2' : '', b[2] ? '3' : ''].filter(Boolean).join('·') + '루' : '주자 없음';

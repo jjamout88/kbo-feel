@@ -145,22 +145,27 @@ Scenes.run = (o) => {
   const G = { phase: 'pre', t: 0, me: { x: b2[0], y: b2[1], seg: 0, d: 0 }, ball: { x0: home[0], y0: home[1], u: 0, dur: 0.9 + 0.5 * depth }, of: { x: OFp[fi][0], y: OFp[fi][1], has: false }, dec: null, res: null, msg: null, thr: null, endT: 0 };
   const rs = (50 + 28 * st.spd / 99) * (o.tactic === 'speed' ? 1.08 : 1);
   const L1 = Math.hypot(b3[0] - b2[0], b3[1] - b2[1]), L2 = Math.hypot(home[0] - b3[0], home[1] - b3[1]);
-  const EZ = S.easy ? 1.3 : 1; const preWin = 24 * spdT, postWin = 14 * spdT * EZ, perfWin = 3.2 * spdT * EZ;
+  // v1.7 쉽게: 퍼펙트 구간 3.2 → 8px, 3루 근처 슬로모션, '지금!' 표시, 퍼펙트 아니어도 세이프 확률 상향
+  const RB = window.BAL_RUN || { pre: 34, post: 22, perf: 8, slow: 0.45, base: 0.5, spdK: 0.35, depthK: 0.25, armK: 0.2, lateK: 0.3 };
+  const EZ = S.easy ? 1.3 : 1; const preWin = RB.pre * spdT, postWin = RB.post * spdT * EZ, perfWin = RB.perf * spdT * EZ;
   const bot = window.BOT && BOT.run;
   function decide(go) {
     if (G.dec || G.phase !== 'live') return; const d = G.me.d - L1;   // 3루 기준 거리 (음수=도착 전)
     if (d < -preWin) return;
     if (!go) { G.dec = { go: false }; G.msg = { txt: 'STOP', col: P.w3, big: 2, t: 0, sub: '3루에서 멈춤' }; Sound.play('click'); return; }
     const perfect = Math.abs(d) <= perfWin; const late = Math.max(0, d) / postWin;
-    let p = perfect ? 1 : Math.max(0.08, Math.min(0.92, 0.3 + 0.4 * st.spd / 99 + 0.3 * depth - 0.25 * arm - late * 0.35 - (d < 0 ? 0.05 : 0)));
+    let p = perfect ? 1 : Math.max(0.15, Math.min(0.95, RB.base + RB.spdK * st.spd / 99 + RB.depthK * depth - RB.armK * arm - late * RB.lateK - (d < 0 ? 0.05 : 0)));
     G.dec = { go: true, perfect, safe: R() < p }; G.msg = { txt: perfect ? 'PERFECT 스타트!' : 'GO!', col: P.y3, big: 2, t: 0 }; Sound.play(perfect ? 'kkang' : 'whoosh');
   }
   return {
     enter() { Coach.once('c_run', TUT.c_run); },
+    get _G() { return G; },   // 테스트·디버그용
     update(dt) {
       G.t += dt; if (G.msg) G.msg.t += dt;
       if (G.phase === 'pre') { if (G.t > 0.6) { G.phase = 'live'; G.t = 0; Sound.play('ttak', 0.7); } return; }
       if (G.phase === 'live') {
+        // 3루 근처(결정 구간)에선 슬로모션
+        const dd = G.me.d - L1; G.slowmo = !G.dec && dd > -preWin && dd < postWin; if (G.slowmo) dt *= RB.slow;
         const b = G.ball; b.u = Math.min(1, b.u + dt / b.dur);
         const of = G.of; if (!of.has) { const dx = land[0] - of.x, dy = land[1] - of.y, d = Math.hypot(dx, dy); if (d > 2) { const m = Math.min(d, 55 * dt); of.x += dx / d * m; of.y += dy / d * m; } else if (b.u >= 1) { of.has = true; G.pickT = G.t; Sound.play('mitt'); } }
         // 주자
@@ -181,12 +186,12 @@ Scenes.run = (o) => {
     down(p) { if (G.phase !== 'live' || G.dec) return; if (p.x >= 200) decide(true); else if (p.x < 120 && p.y > 100) decide(false); },
     key(code) { if (code === 'Space' || code === 'KeyG') decide(true); if (code === 'KeyS') decide(false); },
     draw(c) {
-      const m = G.me; const tc = camOf((m.x * 2 + G.of.x) / 3, (m.y * 2 + G.of.y) / 3 + 10); G.cam = G.cam || tc; G.cam = { x: G.cam.x + (tc.x - G.cam.x) * 0.1, y: G.cam.y + (tc.y - G.cam.y) * 0.1 }; const cam = G.cam;
+      const m = G.me; const tc = !G.dec ? camOf((m.x + b3[0]) / 2 + 20, (m.y + b3[1]) / 2 + 8) : camOf((m.x * 2 + G.of.x) / 3, (m.y * 2 + G.of.y) / 3 + 10); /* 결정 전엔 3루가 화면 가운데쯤 */ G.cam = G.cam || tc; G.cam = { x: G.cam.x + (tc.x - G.cam.x) * 0.1, y: G.cam.y + (tc.y - G.cam.y) * 0.1 }; const cam = G.cam;
       drawWorld(c, cam);
       // 타구
       const b = G.ball; if (!G.of.has) { const u = b.u; const bx = b.x0 + (land[0] - b.x0) * u, by = b.y0 + (land[1] - b.y0) * u; const [sx, sy] = W2S(cam, bx, by); drawBall(c, sx, sy - Math.sin(u * Math.PI) * 18, 1.5); }
       // 3루 타이밍 링
-      if (G.phase === 'live' && !G.dec) { const d = G.me.d - L1; const [qx, qy] = W2S(cam, b3[0], b3[1]); const k = Math.max(0, Math.min(1, -d / preWin)); const rr = 4 + 18 * k; const col = Math.abs(d) <= perfWin ? P.y3 : d > -preWin ? P.w4 : P.n5; c.save(); c.globalAlpha = 0.85; for (let i = 0; i < 32; i++) { const a = i / 32 * 6.28; px(c, qx + Math.cos(a) * rr, qy + Math.sin(a) * rr * 0.8, col); } c.restore(); }
+      if (G.phase === 'live' && !G.dec) { const d = G.me.d - L1; const [qx, qy] = W2S(cam, b3[0], b3[1]); const k = Math.max(0, Math.min(1, -d / preWin)); const rr = 7 + 22 * k; const col = Math.abs(d) <= perfWin ? P.y3 : d > -preWin ? P.w4 : P.n5; c.save(); c.globalAlpha = 0.9; for (let i = 0; i < 48; i++) for (let w = 0; w < 2; w++) { const a = i / 48 * 6.28; px(c, qx + Math.cos(a) * (rr - w), qy + Math.sin(a) * (rr - w) * 0.8, col); } c.restore(); }
       const [ox, oy] = W2S(cam, G.of.x, G.of.y); G_.drawTop(c, ox, oy, Math.atan2(home[1] - G.of.y, home[0] - G.of.x), G.of.has ? 0 : (G.t * 8 | 0) % 2 + 1, G_.topTeam(o.opp), 0, { throw: !!G.thr && G.thr.u < 0.2 });
       const [cx_, cy_] = W2S(cam, home[0], home[1] + 6); G_.drawTop(c, cx_, cy_, -Math.PI / 2, 0, G_.topTeam(o.opp));
       if (G.thr) { const u = G.thr.u; const tx = G.thr.x0 + (home[0] - G.thr.x0) * u, ty = G.thr.y0 + (home[1] - G.thr.y0) * u; const [sx, sy] = W2S(cam, tx, ty); drawBall(c, sx, sy - Math.sin(u * Math.PI) * 10, 1.5); }
@@ -194,7 +199,14 @@ Scenes.run = (o) => {
       fieldHUD(c, o, '홈 쇄도 · 2루 주자');
       G_.panel(c, 198, 4, 118, 27, { bg: P.n1, br: P.n3 });
       text(c, `타구 ${depth > 0.66 ? '깊음' : depth > 0.33 ? '보통' : '얕음'}`, 204, 7, { f: 's', col: depth > 0.5 ? P.ok : P.r4 }); text(c, `외야 어깨 ${arm > 0.66 ? '강함' : arm > 0.33 ? '보통' : '약함'}`, 204, 18, { f: 's', col: arm < 0.5 ? P.ok : P.r4 });
-      if (G.phase === 'live' && !G.dec) { btn(c, 'stop', 8, 112, 64, 30, 'STOP', () => decide(false), { kind: 'navy', instant: true }); G_.ell(c, 284, 118, 26, 22, G_.PAL.red); text(c, 'GO', 284, 112, { f: 'b', col: P.w4, a: 'c', out: P.r0, sc: 1 }); text(c, '3루를 밟는 순간!', 160, 30, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
+      if (G.phase === 'live' && !G.dec) {
+        btn(c, 'stop', 8, 112, 64, 30, 'STOP', () => decide(false), { kind: 'navy', instant: true }); G_.ell(c, 284, 118, 26, 22, G_.PAL.red); text(c, 'GO', 284, 112, { f: 'b', col: P.w4, a: 'c', out: P.r0, sc: 1 });
+        const d = G.me.d - L1;
+        if (Math.abs(d) <= perfWin) text(c, '지금!', 160, 36, { f: 'b', col: P.y3, a: 'c', out: P.r0, sc: 2 });
+        else if (d > -preWin) text(c, d < 0 ? '곧 3루!' : '늦기 전에!', 160, 40, { f: 'b', col: P.w4, a: 'c', out: P.n0 });
+        else { rect(c, 70, 34, 180, 14, 'rgba(10,14,36,0.75)'); text(c, '링이 노래지면 오른쪽 버튼!', 160, 36, { f: 's', col: P.w4, a: 'c' }); }
+        if (G.slowmo) { c.save(); c.globalAlpha = 0.18; rect(c, 0, 0, LW, LH, P.n4); c.restore(); }
+      }
       drawMsg(c, G.msg);
     },
   };
@@ -204,24 +216,40 @@ Scenes.run = (o) => {
 // 도루 (포수 시점)
 // ============================================================================
 Scenes.steal = (o) => {
+  // v1.7 쉽게: 투수 클로즈업 + 상태 글자 + 타이밍 링, 일찍 누르면 '아직!'(실패 아님), 견제구 때만 견제사
   const S = App.S, st = o.stats, R = Math.random, ace = o.ace ? 1 : 0; const spdT = o.tactic === 'speed' ? 1.5 : 1;
-  const acts = []; const nf = o.c.feints != null ? o.c.feints : (R() * 3) | 0;
-  let tt = 0.8 + R() * 0.6; for (let i = 0; i < nf; i++) { const pk = R() < 0.35; acts.push({ t: tt, kind: pk ? 'pick' : 'look', dur: pk ? 0.9 : 0.7 }); tt += (pk ? 0.9 : 0.7) + 0.4 + R() * 0.7; }
+  const SB = window.BAL_STL || { maxFeint: 1, pickP: 0.25, perf: 0.3, good: 0.9, base: 0.55, spdK: 0.35, aceK: 0.12, lateK: 0.35, lock: 0.5 };
+  const acts = []; const nf = Math.min(SB.maxFeint, o.c.feints != null ? o.c.feints : (R() * 2) | 0);
+  let tt = 1.0 + R() * 0.6; for (let i = 0; i < nf; i++) { const pk = R() < SB.pickP; acts.push({ t: tt, kind: pk ? 'pick' : 'look', dur: pk ? 0.9 : 0.8 }); tt += (pk ? 0.9 : 0.8) + 0.6 + R() * 0.6; }
   acts.push({ t: tt, kind: 'go', dur: 0.7 });
-  const perf = 0.13 * spdT * (S.easy ? 1.3 : 1), good = 0.55;
-  const G = { t: 0, phase: 'live', act: null, tap: null, res: null, msg: null, endT: 0, run: 0 };
+  const perf = SB.perf * spdT * (S.easy ? 1.3 : 1), good = SB.good * (S.easy ? 1.2 : 1);
+  const G = { t: 0, phase: 'live', act: null, tap: null, res: null, msg: null, endT: 0, run: 0, lockUntil: 0 };
   const bot = window.BOT && BOT.steal;
+  const go = acts[acts.length - 1];
   function curAct() { return acts.find(a => G.t >= a.t && G.t < a.t + a.dur) || null; }
   function tap() {
-    if (G.phase !== 'live' || G.tap) return; const a = curAct(); const go = acts[acts.length - 1];
-    if (G.t < go.t) { G.tap = { early: true }; G.res = { res: 'pick' }; G.phase = 'over'; G.endT = 1.6; G.msg = { txt: '견제사!', col: P.dn, big: 3, t: 0, sub: '너무 빨리 뛰었다' }; Sound.play('down'); shake(2); return; }
-    const dtp = G.t - go.t; const perfect = dtp <= perf; const p = perfect ? 1 : Math.max(0.1, Math.min(0.9, 0.35 + 0.45 * st.spd / 99 - 0.15 * ace - Math.max(0, dtp - perf) / good * 0.45));
+    if (G.phase !== 'live' || G.tap || G.t < G.lockUntil) return; const a = curAct();
+    if (G.t < go.t) {
+      if (a && a.kind === 'pick' && G.t - a.t < 0.6) { G.tap = { early: true }; G.res = { res: 'pick' }; G.phase = 'over'; G.endT = 1.6; G.msg = { txt: '견제사!', col: P.dn, big: 3, t: 0, sub: '견제구 때 뛰었다' }; Sound.play('down'); shake(2); return; }
+      G.lockUntil = G.t + SB.lock; G.msg = { txt: '아직!', col: P.w3, big: 2, t: 0, sub: '다리를 들 때까지 기다리세요' }; Sound.play('click'); return;
+    }
+    const dtp = G.t - go.t; const perfect = dtp <= perf;
+    const p = perfect ? 1 : Math.max(0.15, Math.min(0.95, SB.base + SB.spdK * st.spd / 99 - SB.aceK * ace - Math.max(0, dtp - perf) / good * SB.lateK));
     G.tap = { perfect, safe: R() < p, at: G.t }; G.phase = 'running'; G.msg = { txt: perfect ? 'PERFECT 스타트!' : '스타트!', col: P.y3, big: 2, t: 0 }; Sound.play(perfect ? 'kkang' : 'whoosh');
   }
-  return {
+  // 투수 상태 글자
+  function stateTxt() {
+    if (G.phase !== 'live') return null; const a = curAct();
+    if (G.t >= go.t) return G.t - go.t <= perf ? ['지금!', P.y3] : G.t - go.t <= good ? ['지금!', P.ok] : null;
+    if (a && a.kind === 'look') return ['고개 돌림 · 참기', P.w3];
+    if (a && a.kind === 'pick') return ['견제! 참기', P.r4];
+    return ['집중…', P.w1];
+  }
+  const self = {
     enter() { Coach.once('c_steal', TUT.c_steal); },
+    get _G() { return G; },   // 테스트·디버그용
     update(dt) {
-      G.t += dt; if (G.msg) G.msg.t += dt; const go = acts[acts.length - 1];
+      G.t += dt; if (G.msg) G.msg.t += dt;
       if (G.phase === 'live') { const a = curAct(); if (a !== G.act) { G.act = a; if (a && a.kind === 'go') Sound.play('tick'); if (a && a.kind === 'pick') Sound.play('whoosh'); }
         if (bot) { const want = bot.early ? go.t - 0.3 : go.t + bot.delay; if (G.t >= want) tap(); }
         if (G.t > go.t + good + 0.2) { G.phase = 'over'; G.endT = 1.2; G.res = { res: 'hold' }; G.msg = { txt: '못 뛰었다', col: P.w2, big: 2, t: 0, sub: '1루에 그대로' }; } }
@@ -231,19 +259,26 @@ Scenes.steal = (o) => {
     down(p) { tap(); }, key(code) { if (code === 'Space') tap(); },
     draw(c) {
       G_.stadium(c, G_.THEMES[o.theme || 'home'], S.trust, App.t, 0.1);
-      const a = G.act; const go = acts[acts.length - 1]; const committed = G.t >= go.t;
-      const pf = committed ? (G.t - go.t < 0.25 ? 'lift' : G.t - go.t < 0.45 ? 'stride' : 'rel') : a && a.kind === 'pick' ? (G.t - a.t < 0.3 ? 'set' : 'stride') : 'set';
+      const a = G.act; const committed = G.t >= go.t;
+      const pf = committed ? (G.t - go.t < 0.3 ? 'lift' : G.t - go.t < 0.5 ? 'stride' : 'rel') : a && a.kind === 'pick' ? (G.t - a.t < 0.3 ? 'set' : 'stride') : 'set';
       c.drawImage(G_.pitcherSprite(pf, o.opp), 148, 57);
-      if (a && a.kind === 'look') { G_.icon(c, 'eye', 156, 46); text(c, '…', 172, 44, { f: 's', col: P.w2 }); }
-      if (a && a.kind === 'pick' && G.t - a.t > 0.3) { const u = Math.min(1, (G.t - a.t - 0.3) / 0.4); drawBall(c, 160 + (246 - 160) * u, 72 + (98 - 72) * u, 1.4); text(c, '견제!', 200, 60, { f: 'b', col: P.r4, out: P.n0 }); }
-      if (committed && G.t - go.t < 0.5) { const k = 1 - (G.t - go.t) / 0.5; c.save(); c.globalAlpha = k; text(c, '!', 172, 46, { f: 'b', col: P.y3, sc: 2, out: P.r0 }); c.restore(); }
+      if (a && a.kind === 'pick' && G.t - a.t > 0.3) { const u = Math.min(1, (G.t - a.t - 0.3) / 0.4); drawBall(c, 160 + (246 - 160) * u, 72 + (98 - 72) * u, 1.4); }
       // 1루수 / 나
       c.drawImage(G_.pitcherSprite('idle', o.opp), 255 - 12, 104 - 24);
       const u = G.run; const rx = 246 + (160 - 246) * u, ry = 102 + (70 - 102) * u; c.drawImage(G_.pitcherSprite(G.phase === 'running' ? 'stride' : 'idle', 'KIA'), Math.round(rx - 12), Math.round(ry - 24)); text(c, '나', rx, ry - 30, { f: 's', col: P.y3, a: 'c', out: P.n0 });
       if (G.phase === 'running') { const v = Math.min(1, u * 1.3); drawBall(c, 160, 136 + (70 - 136) * v, 1.6); }
+      // 투수 클로즈업 (2배) + 상태 글자 + 타이밍 링
+      if (G.phase === 'live' || (G.phase === 'running' && G.run < 0.3)) {
+        const X0 = 116, Y0 = 34, W = 88, H = 66; G_.panel(c, X0, Y0, W, H, { bg: '#0b1230', br: committed ? P.y2 : P.n4 });
+        c.save(); c.beginPath(); c.rect(X0 + 2, Y0 + 2, W - 4, H - 4); c.clip(); c.drawImage(G_.pitcherSprite(pf, o.opp), 0, 0, 24, 26, X0 + W / 2 - 24, Y0 + 6, 48, 52); c.restore();
+        const sx = stateTxt(); if (sx) text(c, sx[0], X0 + W / 2, Y0 + H + 3, { f: 'b', col: sx[1], a: 'c', out: P.n0, sc: sx[0] === '지금!' ? 2 : 1 });
+        if (committed && G.phase === 'live') { const k = Math.min(1, (G.t - go.t) / perf); const r = 46 - 22 * k; const col = G.t - go.t <= perf ? P.y3 : P.ok;
+          for (let w = 0; w < 2; w++) for (let i = 0; i < 64; i++) { const ang = i / 64 * 6.283; px(c, X0 + W / 2 + Math.cos(ang) * (r - w), Y0 + H / 2 + Math.sin(ang) * (r - w) * 0.8, col); } }
+      }
       G_.panel(c, 4, 4, 118, 27, { bg: P.n1, br: P.n3 }); text(c, '도루 · 1루 주자', 10, 7, { f: 's', col: P.y3 }); text(c, `주력 ${st.spd}`, 10, 18, { f: 's', col: P.w2 });
-      if (G.phase === 'live') { text(c, '다리 들면 탭! 고개만 돌릴 땐 참기', 160, 124, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
+      if (G.phase === 'live') { rect(c, 40, 126, 240, 14, 'rgba(10,14,36,0.8)'); text(c, '"지금!"이 뜨면 탭 · 견제구 땐 참기', 160, 128, { f: 's', col: P.w4, a: 'c' }); }
       drawMsg(c, G.msg);
     },
   };
+  return self;
 };
