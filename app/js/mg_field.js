@@ -18,6 +18,13 @@ function gauge(c, g, y = 120) {
   text(c, '송구! 초록에서 탭', 160, y - 16, { f: 'b', col: P.w4, a: 'c', out: P.n0 });
 }
 
+// 목표 지점 표시: 반투명 노란 원 + 굵은 테두리 + '여기로'
+function markRing(c, x, y, r) {
+  const pul = 1 + 0.12 * Math.sin(App.t * 8); r = Math.max(7, r) * pul;
+  c.save(); c.globalAlpha = 0.28; G_.ell(c, x, y, r, r * 0.8, [P.y3, P.y3, P.y3, P.y3, P.y3], { flat: true, noOutline: true }); c.restore();
+  for (let k = 0; k < 2; k++) for (let i = 0; i < 40; i++) { const a = i / 40 * 6.28; px(c, x + Math.cos(a) * (r - k), y + Math.sin(a) * (r - k) * 0.8, k ? P.y1 : P.y3); }
+  text(c, '여기로', x, y - r - 13, { f: 's', col: P.y3, a: 'c', out: P.n0 });
+}
 // ============================================================================
 // 수비 위기
 // ============================================================================
@@ -26,19 +33,25 @@ Scenes.field = (o) => {
   const IF = S.me.pos !== 'OF'; const home = FWD.home;
   const start = IF ? [205, 278] : [240, 168];
   const me = { x: start[0], y: start[1], dir: -Math.PI / 2, fr: 0, dive: 0 };
-  const spd = (IF ? 44 : 40) + 22 * st.def / 99;
-  const EZ = S.easy ? 1.25 : 1; const catchR = (5 + 3 * st.def / 99) * shift * EZ, diveR = catchR + (7 + 4 * st.def / 99) * shift;
+  // 수비 판정 상수 (v1.3 완화: 탭 이동·카메라 고정·목표 표시와 함께)
+  const FB = window.BAL_FLD || { spdIF: 46, spdOF: 44, spdK: 24, catch0: 7, catchK: 4, dive0: 8, diveK: 5, grSpd: 85, flyDur: 2.3, pre: 1.0,
+    gIF: 0.26, gOF: 0.22, gK: 0.16, perIF: 1.3, perOF: 1.5, perf: 0.06 };
+  const spd = (IF ? FB.spdIF : FB.spdOF) + FB.spdK * st.def / 99;
+  const EZ = S.easy ? 1.25 : 1; const catchR = (FB.catch0 + FB.catchK * st.def / 99) * shift * EZ, diveR = catchR + (FB.dive0 + FB.diveK * st.def / 99) * shift;
   const G = { phase: 'pre', t: 0, ball: null, target: null, gauge: null, res: null, msg: null, endT: 0, runner: null, thr: null, perfect: false };
   // 타구 설정
   if (IF) {
     const side = (R() < 0.5 ? -1 : 1), off = (16 + R() * 24) * side;
     const dx = me.x - home[0], dy = me.y - home[1], L = Math.hypot(dx, dy); const px_ = -dy / L, py_ = dx / L;
     const pass = [me.x + px_ * off, me.y + py_ * off]; const vx = (pass[0] - home[0]), vy = (pass[1] - home[1]); const vl = Math.hypot(vx, vy);
-    G.ball = { kind: 'gr', x: home[0], y: home[1] - 4, vx: vx / vl * (100 + 20 * ace), vy: vy / vl * (100 + 20 * ace), h: 0 };
+    G.ball = { kind: 'gr', x: home[0], y: home[1] - 4, vx: vx / vl * FB.grSpd * (1 + 0.15 * ace), vy: vy / vl * FB.grSpd * (1 + 0.15 * ace), h: 0 };
+    // '여기로' 표시: 공 길에서 내 위치와 가장 가까운 점
+    const ux = vx / vl, uy = vy / vl, tproj = (me.x - home[0]) * ux + (me.y - home[1]) * uy; G.mark = [home[0] + ux * tproj, home[1] - 4 + uy * tproj];
   } else {
     const ang = -Math.PI / 2 + (R() - 0.5) * 2.6, dist = 50 + R() * 50; const Lx = me.x + Math.cos(ang) * dist, Ly = me.y + Math.sin(ang) * dist * 0.9;
-    G.ball = { kind: 'fly', x0: home[0], y0: home[1] - 4, x1: Lx, y1: Ly, u: 0, dur: 2.0 - 0.2 * ace, x: home[0], y: home[1], h: 0 };
+    G.ball = { kind: 'fly', x0: home[0], y0: home[1] - 4, x1: Lx, y1: Ly, u: 0, dur: FB.flyDur - 0.2 * ace, x: home[0], y: home[1], h: 0 }; G.mark = [Lx, Ly];
   }
+  G.camFix = camOf((me.x + G.mark[0]) / 2, (me.y + G.mark[1]) / 2 - 6); G.cam = G.camFix; G.tgt = null;
   const bot = window.BOT && BOT.field;
   function catchCheck(bx, by) {
     const d = Math.hypot(me.x - bx, me.y - by);
@@ -48,7 +61,7 @@ Scenes.field = (o) => {
     me.dive = kind === 'dive' ? 1 : 0; Sound.play(kind === 'dive' ? 'slide' : 'mitt'); shake(kind === 'dive' ? 3 : 1);
     G.msg = { txt: kind === 'dive' ? '다이빙 캐치!' : '잡았다!', col: P.y3, big: 2, t: 0 };
     G.phase = 'gauge'; G.t = 0; G.dive = kind === 'dive';
-    G.gauge = { pos: 0, dir: 1, green: (IF ? 0.2 + 0.16 * st.def / 99 : 0.14 + 0.14 * st.def / 99) * shift * EZ * (G.dive ? 0.75 : 1), perf: 0.045, period: IF ? 0.85 : 1.1, cycles: 0 };
+    G.gauge = { pos: 0, dir: 1, green: ((IF ? FB.gIF : FB.gOF) + FB.gK * st.def / 99) * shift * EZ * (G.dive ? 0.8 : 1), perf: FB.perf, period: IF ? FB.perIF : FB.perOF, cycles: 0 };
     if (bot) G.botTap = 0.5 + (R() - 0.5) * 2 * bot.jt;
   }
   function missed(kind) { G.phase = 'over'; G.endT = 1.6; G.res = { res: kind }; G.msg = { txt: kind === 'drop' ? '놓쳤다…' : '빠졌다…', col: P.dn, big: 2, t: 0, sub: '안타 허용' }; Sound.play('down'); }
@@ -65,33 +78,39 @@ Scenes.field = (o) => {
     enter() { Coach.once('c_fld_' + (IF ? 'IF' : 'OF'), TUT['c_fld_' + (IF ? 'IF' : 'OF')]); },
     update(dt) {
       G.t += dt; if (G.msg) G.msg.t += dt;
-      if (G.phase === 'pre') { if (G.t > 0.7) { G.phase = 'live'; G.t = 0; Sound.play(IF ? 'ttak' : 'kkang'); } return; }
+      if (G.phase === 'pre') { if (G.t > FB.pre) { G.phase = 'live'; G.t = 0; Sound.play(IF ? 'ttak' : 'kkang'); } return; }
       if (G.phase === 'live') {
         // 이동
         let tx = null, ty = null;
         if (bot) { const b = G.ball; const aim = b.kind === 'fly' ? [b.x1, b.y1] : (() => { let best = null; for (let k = 0; k < 120; k++) { const t2 = k * 0.02, bx = b.x + b.vx * t2, by = b.y + b.vy * t2; if (Math.hypot(bx - me.x, by - me.y) <= spd * (t2 - bot.react)) { best = [bx, by]; break; } } return best || [b.x + b.vx, b.y + b.vy]; })(); if (G.t > bot.react) { tx = aim[0] + bot.err * Math.sin(G.t * 3); ty = aim[1]; } }
-        else if (ptr) { tx = ptr.x + G.cam.x - 160; ty = ptr.y + G.cam.y - 74; }
+        else if (G.tgt) { tx = G.tgt[0]; ty = G.tgt[1]; }
         if (tx != null) { const dx = tx - me.x, dy = ty - me.y, d = Math.hypot(dx, dy); if (d > 1) { const m = Math.min(d, spd * dt); me.x += dx / d * m; me.y += dy / d * m; me.dir = Math.atan2(dy, dx); me.fr = (G.t * 8 | 0) % 2 + 1; } else me.fr = 0; } else me.fr = 0;
         const b = G.ball;
         if (b.kind === 'gr') { b.x += b.vx * dt; b.y += b.vy * dt; const k = catchCheck(b.x, b.y); if (k) return caught(k); if (Math.hypot(b.x - home[0], b.y - home[1]) > Math.hypot(me.x - home[0], me.y - home[1]) + 26) return missed('hit'); }
         else { b.u += dt / b.dur; const u = Math.min(1, b.u); b.x = b.x0 + (b.x1 - b.x0) * u; b.y = b.y0 + (b.y1 - b.y0) * u; b.h = Math.sin(u * Math.PI) * 70; if (u >= 1) { const k = catchCheck(b.x1, b.y1); if (k) return caught(k); return missed('drop'); } }
       }
-      if (G.phase === 'gauge') { const g = G.gauge; g.pos += g.dir * dt / (g.period / 2); if (g.pos >= 1) { g.pos = 1; g.dir = -1; g.cycles++; } if (g.pos <= 0) { g.pos = 0; g.dir = 1; g.cycles++; } if (g.cycles >= 4) { tap(); } if (bot && G.t > 0.3 && Math.abs(g.pos - G.botTap) < 0.02) tap(); }
+      if (G.phase === 'gauge') { const g = G.gauge; g.pos += g.dir * dt / (g.period / 2); if (g.pos >= 1) { g.pos = 1; g.dir = -1; g.cycles++; } if (g.pos <= 0) { g.pos = 0; g.dir = 1; g.cycles++; } if (g.cycles >= 6) { tap(); } if (bot && G.t > 0.3 && Math.abs(g.pos - G.botTap) < 0.02) tap(); }
       if (G.phase === 'throw') { const th = G.thr; th.u += dt / th.dur; if (th.u >= 1 && !G.landed) { G.landed = 1; G.phase = 'over'; G.endT = 1.4; G.res = { res: G.ok ? 'out' : 'hit', dive: G.dive, perfect: G.perfect }; G.msg = { txt: G.ok ? '아웃!' : '세이프…', col: G.ok ? P.y3 : P.dn, big: 3, t: 0, sub: G.ok ? (G.perfect ? '완벽한 송구' : '') : '실점 허용' }; Sound.play(G.ok ? 'roar' : 'down'); if (G.ok) shake(2); } }
       if (G.phase === 'over') { G.endT -= dt; if (G.endT <= 0 && !G.ended) { G.ended = 1; o.onEnd(G.res); } }
     },
-    down(p) { if (G.phase === 'gauge') return tap(); ptr = p; },
-    move(p) { if (ptr && ptr.id === p.id) ptr = p; },
-    up(p) { if (ptr && ptr.id === p.id) ptr = null; },
+    down(p) { if (G.phase === 'gauge') return tap(); ptr = p; if (G.phase === 'live' || G.phase === 'pre') G.tgt = [p.x + G.cam.x - 160, p.y + G.cam.y - 74]; },
+    move(p) { if (ptr && ptr.id === p.id) { ptr = p; if (G.phase === 'live' || G.phase === 'pre') G.tgt = [p.x + G.cam.x - 160, p.y + G.cam.y - 74]; } },
+    up(p) { if (ptr && ptr.id === p.id) ptr = null; },   // 손을 떼도 목표까지 계속 달림
     key(code) { if (code === 'Space') tap(); },
     draw(c) {
       const b = G.ball; const fx = G.phase === 'throw' && G.thr ? [G.thr.x0 + (G.thr.x1 - G.thr.x0) * Math.min(1, G.thr.u), G.thr.y0 + (G.thr.y1 - G.thr.y0) * Math.min(1, G.thr.u)] : null;
-      const fx2 = fx || (b.kind === 'fly' ? [(me.x + b.x1) / 2, (me.y + b.y1) / 2 - 10] : [(me.x + b.x) / 2, (me.y + b.y) / 2]);
-      const tc = camOf(fx2[0], fx2[1]); G.cam = G.cam || tc; G.cam = { x: G.cam.x + (tc.x - G.cam.x) * 0.12, y: G.cam.y + (tc.y - G.cam.y) * 0.12 }; const cam = G.cam;
+      if (fx) { const tc = camOf(fx[0], fx[1]); G.cam = { x: G.cam.x + (tc.x - G.cam.x) * 0.12, y: G.cam.y + (tc.y - G.cam.y) * 0.12 }; }
+      const cam = G.cam;
       drawWorld(c, cam);
       // 낙하 지점 그림자
       if (b.kind === 'fly' && G.phase === 'live') { const [sx, sy] = W2S(cam, b.x1, b.y1); const k = Math.min(1, b.u); c.save(); c.globalAlpha = 0.25 + 0.35 * k; G_.ell(c, sx, sy, 3 + 5 * k, 2 + 3 * k, [P.g0, P.g0, P.g0, P.g0, P.g0], { flat: true, noOutline: true }); c.restore();
-        c.save(); c.globalAlpha = 0.6; for (let i = 0; i < 24; i++) { const a = i / 24 * 6.28; px(c, sx + Math.cos(a) * catchR, sy + Math.sin(a) * catchR * 0.8, P.y3); } c.restore(); }
+}
+      // 땅볼 '여기로' 표시 (공 길 위)
+      if (b.kind === 'gr' && (G.phase === 'pre' || G.phase === 'live')) { const [qx, qy] = W2S(cam, G.mark[0], G.mark[1]); markRing(c, qx, qy, catchR);
+        // 공이 올 길 (점선)
+        c.save(); c.globalAlpha = 0.35; for (let k = 0; k < 30; k++) { const t2 = k * 0.08; const [lx, ly] = W2S(cam, b.x + b.vx * t2, b.y + b.vy * t2); if (k % 2 === 0) px(c, lx, ly, P.w4); } c.restore(); }
+      if (b.kind === 'fly' && (G.phase === 'pre' || G.phase === 'live')) { const [qx, qy] = W2S(cam, G.mark[0], G.mark[1]); markRing(c, qx, qy, catchR); }
+      if (G.tgt && G.phase === 'live') { const [gx, gy] = W2S(cam, G.tgt[0], G.tgt[1]); c.save(); c.globalAlpha = 0.7; rect(c, gx - 3, gy, 7, 1, P.w4); rect(c, gx, gy - 3, 1, 7, P.w4); c.restore(); }
       // 수비수(나)
       const [mx, my] = W2S(cam, me.x, me.y);
       G_.drawTop(c, mx, my, me.dir, me.fr, G_.TOP_KIA, S.me.skin, { dive: me.dive && G.phase !== 'live', throw: G.phase === 'throw' && G.t < 0.2 });
@@ -102,9 +121,8 @@ Scenes.field = (o) => {
       if (G.runner) { const u = Math.min(1, G.t / (G.thr.dur + 0.15)); const r = G.runner; const [rx, ry] = W2S(cam, r.x0 + (r.x1 - r.x0) * u, r.y0 + (r.y1 - r.y0) * u); G_.drawTop(c, rx, ry, Math.atan2(r.y1 - r.y0, r.x1 - r.x0), (G.t * 8 | 0) % 2 + 1, G_.topTeam(o.opp)); }
       if (fx) { const [tx, ty] = W2S(cam, fx[0], fx[1]); drawBall(c, tx, ty - Math.sin(Math.min(1, G.thr.u) * Math.PI) * 6, 1.5); }
       // 손가락 목표
-      if (ptr && G.phase === 'live') { c.save(); c.globalAlpha = 0.6; for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28 + App.t * 3; px(c, ptr.x + Math.cos(a) * 5, ptr.y + Math.sin(a) * 5, P.w4); } c.restore(); }
       fieldHUD(c, o, IF ? '수비 위기 · 유격수' : '수비 위기 · 중견수');
-      if (G.phase === 'pre' || (G.phase === 'live' && G.t < 1.2)) text(c, IF ? '땅볼! 누르고 있는 쪽으로 달림' : '뜬공! 그림자 원 안으로', 160, 30, { f: 'b', col: P.w4, a: 'c', out: P.n0 });
+      if (G.phase === 'pre' || (G.phase === 'live' && G.t < 1.5)) { rect(c, 0, 128, LW, 16, 'rgba(10,14,36,0.75)'); text(c, IF ? '땅볼! 노란 원을 탭하면 달려감' : '뜬공! 노란 원을 탭하면 달려감', 160, 130, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
       if (G.phase === 'gauge') gauge(c, G.gauge);
       drawMsg(c, G.msg);
     },

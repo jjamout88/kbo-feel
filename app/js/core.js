@@ -15,7 +15,7 @@ K.pick = pick; K.wpick = wpick; K.clamp = clamp;
 
 // ---------- 밸런스 상수 (시뮬로 튜닝) ----------
 const B = K.BAL = {
-  kiaBase: 0.44,           // 기아 기본 전력 (화면엔 안 보임)
+  kiaBase: 0.435,          // 기아 기본 전력 (화면엔 안 보임)
   mgMax: 0.05,            // 관리 보너스 상한
   teamTrainStep: 0.005, teamTrainCap: 0.03,
   meWeight: 0.03,         // 내 종합능력이 팀 전력에 주는 영향
