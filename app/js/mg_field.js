@@ -84,11 +84,13 @@ Scenes.field = (o) => {
       if (G.phase === 'live') {
         // 이동
         let tx = null, ty = null;
-        if (bot) { const b = G.ball; const aim = b.kind === 'fly' ? [b.x1, b.y1] : (() => { let best = null; for (let k = 0; k < 120; k++) { const t2 = k * 0.02, bx = b.x + b.vx * t2, by = b.y + b.vy * t2; if (Math.hypot(bx - me.x, by - me.y) <= spd * (t2 - bot.react)) { best = [bx, by]; break; } } return best || [b.x + b.vx, b.y + b.vy]; })(); if (G.t > bot.react) { tx = aim[0] + bot.err * Math.sin(G.t * 3); ty = aim[1]; } }
+        if (bot) { const b = G.ball; const aim = b.kind === 'fly' ? [b.x1, b.y1] : (() => { let best = null; for (let k = 0; k < 250; k++) { const t2 = k * 0.02, bx = b.x + b.vx * t2, by = b.y + b.vy * t2; if (Math.hypot(bx - me.x, by - me.y) <= spd * (t2 - bot.react)) { best = [bx, by]; break; } } return best || [b.x + b.vx, b.y + b.vy]; })(); if (G.t > bot.react) { tx = aim[0] + bot.err * Math.sin(G.t * 3); ty = aim[1]; } }
         else if (G.tgt) { tx = G.tgt[0]; ty = G.tgt[1]; }
         if (tx != null) { const dx = tx - me.x, dy = ty - me.y, d = Math.hypot(dx, dy); if (d > 1) { const m = Math.min(d, spd * dt); me.x += dx / d * m; me.y += dy / d * m; me.dir = Math.atan2(dy, dx); me.fr = (G.t * 8 | 0) % 2 + 1; } else me.fr = 0; } else me.fr = 0;
         const b = G.ball;
-        if (b.kind === 'gr') { b.x += b.vx * dt; b.y += b.vy * dt; const k = catchCheck(b.x, b.y); if (k) return caught(k); if (Math.hypot(b.x - home[0], b.y - home[1]) > Math.hypot(me.x - home[0], me.y - home[1]) + 26) return missed('hit'); }
+        if (b.kind === 'gr') { b.x += b.vx * dt; b.y += b.vy * dt; const k = catchCheck(b.x, b.y); if (k) return caught(k);
+          // 빠짐: 공이 '여기로' 지점을 40px 지나치거나 6초가 넘으면 (수비수가 공 앞으로 계속 달려도 끝나게)
+          const bd = Math.hypot(b.x - home[0], b.y - home[1]); if (bd > Math.hypot(G.mark[0] - home[0], G.mark[1] - home[1]) + 40 || G.t > 6) return missed('hit'); }
         else { b.u += dt / b.dur; const u = Math.min(1, b.u); b.x = b.x0 + (b.x1 - b.x0) * u; b.y = b.y0 + (b.y1 - b.y0) * u; b.h = Math.sin(u * Math.PI) * 70; if (u >= 1) { const k = catchCheck(b.x1, b.y1); if (k) return caught(k); return missed('drop'); } }
       }
       if (G.phase === 'gauge') { const g = G.gauge; g.pos += g.dir * dt / (g.period / 2); if (g.pos >= 1) { g.pos = 1; g.dir = -1; g.cycles++; } if (g.pos <= 0) { g.pos = 0; g.dir = 1; g.cycles++; } if (g.cycles >= 6) { tap(); } if (bot && G.t > 0.3 && Math.abs(g.pos - G.botTap) < 0.02) tap(); }
