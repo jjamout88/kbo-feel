@@ -1,7 +1,7 @@
 'use strict';
 // ============================================================================
 // mg_bat.js — 타격 미니게임 (한 타석 / 홈런 더비)
-// 타이밍만: 아무 데나 탭하면 스윙. 컨택=타이밍 판정 폭, 파워=장타·홈런, 선구=볼 미리 보임(파란 테두리)
+// 타이밍만: 아무 데나 탭하면 스윙. 타이밍 링(줄어드는 원)이 가운데 원과 겹칠 때가 정답. 컨택=타이밍 판정 폭, 파워=장타·홈런, 선구=볼 미리 보임(파란 테두리)
 // 존 밖 공을 치면 빗맞기 쉬움. 에이스=공 빠름·무브 큼·판정 폭 좁음. 퍼펙트(존 안 + 타이밍 정중앙) = 무조건 안타
 // ============================================================================
 Scenes.bat = (o) => {
@@ -31,7 +31,7 @@ Scenes.bat = (o) => {
     if (window.BOT) window.BOT.plan = { dt: (R() - 0.5) * 2 * BOT.jt, take: !G.ball.inZone && R() < BOT.eye };
   }
   function ballPos(b, t) { const u = Math.min(t, 1.15); const x = REL.x + (b.tx - b.p.brk - REL.x) * u + b.p.brk * u * u * u; const y = REL.y + (b.ty - b.p.drop - REL.y) * u + b.p.drop * u * u * u - Math.sin(u * Math.PI) * 4; return { x, y, r: 0.6 + 2.6 * u * u }; }
-  function trySwing() { if (G.phase !== 'pitch' || G.bunt || G.swing >= 0 || !G.ball || G.ball.t > 1.02) return; G.swing = 0; G.swingBallT = G.ball.t; Sound.play('swing'); }
+  function trySwing() { if (G.phase !== 'pitch' || G.bunt || G.swing >= 0 || !G.ball || G.ball.t > 1.02) return; G.swing = 0; G.swingBallT = G.ball.t; G.swingRing = ringAt(G.ball.t, G.ball); Sound.play('swing'); }
   function tryBunt() { if (derby) return; if (!['ready', 'windup', 'pitch'].includes(G.phase) || G.swing >= 0 || (G.ball && G.ball.t > 0.75)) return; G.bunt = !G.bunt; Sound.play('click'); }
   function judge() {
     const b = G.ball; if (G.swing < 0) return null;
@@ -145,6 +145,7 @@ Scenes.bat = (o) => {
       if (['ready', 'windup', 'pitch'].includes(G.phase)) { c.save(); c.globalAlpha = 0.5; const z = ZONE; rect(c, z.x0, z.y0, z.x1 - z.x0, 1, P.w4); rect(c, z.x0, z.y1, z.x1 - z.x0 + 1, 1, P.w4); rect(c, z.x0, z.y0, 1, z.y1 - z.y0, P.w4); rect(c, z.x1, z.y0, 1, z.y1 - z.y0, P.w4); c.restore(); for (const [cx, cy] of [[z => z.x0, z => z.y0]]) { } }
       G.trail.forEach((p, i) => { c.save(); c.globalAlpha = (i + 1) / G.trail.length * 0.45; rect(c, p.x, p.y, 2, 2, P.w4); c.restore(); });
       const b = G.ball; const behind = b && b.t < 0.97;
+      drawTimingRing(c);
       if (b && behind) drawBall(c, b.x, b.y, b.r, !b.inZone && b.t >= 1 - eyeLead() && !o.derby);
       // 타자
       const fr = batterFrame(); const sp = G_.batterSprite(fr, look(S));
@@ -164,7 +165,7 @@ Scenes.bat = (o) => {
       }
       // 능력치 칩 + 조작 안내
       rect(c, 0, 138, 92, 10, 'rgba(10,14,36,0.7)'); text(c, `컨택${st.con} 파워${st.pow} 선구${st.eye}`, 3, 138, { f: 's', col: P.w2 });
-      if (G.pitchN <= 1 && !o.derby && ['ready', 'windup'].includes(G.phase)) text(c, '아무 데나 탭 = 스윙 · 파란 테두리 공은 볼', 196, 126, { f: 's', col: P.w4, a: 'c', out: P.n0 });
+      if (G.pitchN <= 2 && !o.derby && ['ready', 'windup', 'pitch'].includes(G.phase)) { rect(c, 64, 127, 192, 11, 'rgba(10,14,36,0.8)'); text(c, '줄어드는 원이 가운데 원에 닿을 때 탭', 160, 127, { f: 's', col: P.w4, a: 'c' }); }
       if (G.last && ['pitch', 'result', 'fly', 'foul'].includes(G.phase)) text(c, G.last.n, 316, 44, { f: 's', col: P.w2, a: 'r' });
       // 버튼
       const sw = G.swing >= 0 && G.swing < 0.2; G_.ell(c, 287, 120 + (sw ? 1 : 0), 22, 20, G_.PAL.red); text(c, '스윙', 287, 114 + (sw ? 1 : 0), { f: 'b', col: P.w4, a: 'c', out: P.r0 });
@@ -174,6 +175,24 @@ Scenes.bat = (o) => {
       drawMsg(c, G.msg);
     },
   };
+  self._G = G;   // 테스트·디버그용
+  // 타이밍 링: 공이 던져지면 큰 원이 줄어들어 가운데 원과 겹치는 순간 = 스윙할 때.
+  // 색 = 지금 치면 받을 판정 (흰색 헛스윙 / 초록 맞힘 / 노랑 퍼펙트). 에이스는 링이 늦게 나타남
+  const RING = { cx: 160, cy: 105, rT: 16, rMax: 62 };
+  function ringAt(bt, b) { const ideal = CONTACT_T - LEAD / b.p.dur; const k = Math.min(1.4, Math.max(0, bt / ideal)); return { r: RING.rT + (RING.rMax - RING.rT) * (1 - k), err: (bt - ideal) * b.p.dur }; }
+  function ringCol(err) { const ae = Math.abs(err); return ae <= PERF ? P.y3 : ae <= GOOD * 0.5 ? P.ok : P.w3; }
+  function circ(c, r, col, thick) { if (r < 2) return; const n = Math.max(24, Math.round(r * 5)); for (let k = 0; k < thick; k++) for (let i = 0; i < n; i++) { const a = i / n * 6.283; px(c, RING.cx + Math.cos(a) * (r - k), RING.cy + Math.sin(a) * (r - k), col); } }
+  function drawTimingRing(c) {
+    if (G.bunt || !['windup', 'pitch'].includes(G.phase) && !(G.swing >= 0 && G.swing < 0.45 && G.swingRing)) return;
+    // 가운데 목표 원
+    c.save(); c.globalAlpha = 0.18; G_.disc(c, RING.cx, RING.cy, RING.rT, P.w4); c.restore();
+    c.save(); c.globalAlpha = 0.7; for (let i = 0; i < 40; i++) if (i % 2 === 0) { const a = i / 40 * 6.283; px(c, RING.cx + Math.cos(a) * RING.rT, RING.cy + Math.sin(a) * RING.rT, P.w4); } c.restore();
+    if (G.swing >= 0 && G.swingRing) { const sr = G.swingRing; c.save(); c.globalAlpha = 1 - G.swing / 0.45; circ(c, sr.r, ringCol(sr.err), 2); c.restore(); return; }
+    const b = G.ball; if (G.phase !== 'pitch' || !b || b.judged) return;
+    const appear = ace && !o.derby && !practice ? 0.42 : 0; if (b.t < appear) return;
+    const { r, err } = ringAt(b.t, b); if (err > GOOD) return;
+    c.save(); c.globalAlpha = Math.min(1, (b.t - appear) * 6) * (err > 0 ? Math.max(0, 1 - err / GOOD) : 1); circ(c, Math.max(2, r), ringCol(err), 2); c.restore();
+  }
   function batterFrame() { if (G.bunt && ['windup', 'pitch', 'buntroll'].includes(G.phase)) return 'bunt'; if (G.phase === 'buntroll') return 'bunt'; if (G.swing >= 0) { const s = G.swing; return s < 0.035 ? 'sw1' : s < 0.08 ? 'sw2' : s < 0.16 ? 'sw3' : s < 0.42 ? 'sw4' : 'idle0'; } if (G.phase === 'windup' && G.pt > 0.3) return 'load'; if (G.phase === 'over' && G.res && ['HR'].includes(G.res.res)) return 'joy'; return (App.t * 1.6 | 0) % 2 ? 'idle0' : 'idle1'; }
   return self;
 };

@@ -24,12 +24,13 @@ function loadGame() { const S = Store.get(SAVE_KEY); return S && S.v === 1 ? S :
 window.Meta = Meta;
 
 // ---------- 화면 맞춤 (안전 영역 안에 비율 유지) ----------
-function fit() {
-  const r = document.getElementById('wrap').getBoundingClientRect();
-  const s = Math.min(r.width / LW, r.height / LH);
+function fit() {   // 안전 여백(노치·홈 막대)과 둥근 모서리 여유를 뺀 안쪽 크기에 맞춤
+  const w = document.getElementById('wrap'), r = w.getBoundingClientRect(), cs = getComputedStyle(w);
+  const iw = r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), ih = r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const s = Math.min(iw / LW, ih / LH);
   cv.style.width = Math.floor(LW * s) + 'px'; cv.style.height = Math.floor(LH * s) + 'px';
 }
-addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 200)); fit();
+addEventListener('resize', fit); addEventListener('orientationchange', () => { setTimeout(fit, 100); setTimeout(fit, 500); }); if (window.visualViewport) visualViewport.addEventListener('resize', fit); fit();
 
 // ---------- 입력 ----------
 const Input = { ptrs: new Map(), hits: [], downHit: null, last: null };

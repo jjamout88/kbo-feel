@@ -14,7 +14,7 @@
 @font-face{font-family:G9;src:url(fonts/Galmuri9.woff2) format('woff2')}
 :root{--bg:#0a0e24;--fg:#e6ebf8;--accent:#c8203a;color-scheme:dark}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-touch-callout:none}
-#wrap{position:fixed;inset:0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+#wrap{position:fixed;inset:0;padding:max(6px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;background:var(--bg)}
 #nameIn{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0}
 #rot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);color:var(--fg);font:16px G,sans-serif;text-align:center;z-index:9;padding:0 24px}
