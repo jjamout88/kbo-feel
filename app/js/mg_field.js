@@ -34,8 +34,9 @@ Scenes.field = (o) => {
   const start = IF ? [205, 278] : [240, 168];
   const me = { x: start[0], y: start[1], dir: -Math.PI / 2, fr: 0, dive: 0 };
   // 수비 판정 상수 (v1.3 완화: 탭 이동·카메라 고정·목표 표시와 함께)
-  const FB = window.BAL_FLD || { spdIF: 46, spdOF: 44, spdK: 24, catch0: 7, catchK: 4, dive0: 8, diveK: 5, grSpd: 85, flyDur: 2.3, pre: 1.0,
-    gIF: 0.26, gOF: 0.22, gK: 0.16, perIF: 1.3, perOF: 1.5, perf: 0.06 };
+  // v1.5: 화면 아무 데나 탭 = 노란 원으로 자동 달리기, 게이지 더 넓고 느리게
+  const FB = window.BAL_FLD || { spdIF: 50, spdOF: 48, spdK: 24, catch0: 8, catchK: 4, dive0: 10, diveK: 5, grSpd: 60, flyDur: 3.0, pre: 1.0,
+    gIF: 0.36, gOF: 0.32, gK: 0.14, perIF: 2.2, perOF: 2.4, perf: 0.09, snap: true };
   const spd = (IF ? FB.spdIF : FB.spdOF) + FB.spdK * st.def / 99;
   const EZ = S.easy ? 1.25 : 1; const catchR = (FB.catch0 + FB.catchK * st.def / 99) * shift * EZ, diveR = catchR + (FB.dive0 + FB.diveK * st.def / 99) * shift;
   const G = { phase: 'pre', t: 0, ball: null, target: null, gauge: null, res: null, msg: null, endT: 0, runner: null, thr: null, perfect: false };
@@ -76,6 +77,7 @@ Scenes.field = (o) => {
   let ptr = null;
   return {
     enter() { Coach.once('c_fld_' + (IF ? 'IF' : 'OF'), TUT['c_fld_' + (IF ? 'IF' : 'OF')]); },
+    get _G() { return G; },   // 테스트·디버그용
     update(dt) {
       G.t += dt; if (G.msg) G.msg.t += dt;
       if (G.phase === 'pre') { if (G.t > FB.pre) { G.phase = 'live'; G.t = 0; Sound.play(IF ? 'ttak' : 'kkang'); } return; }
@@ -93,8 +95,8 @@ Scenes.field = (o) => {
       if (G.phase === 'throw') { const th = G.thr; th.u += dt / th.dur; if (th.u >= 1 && !G.landed) { G.landed = 1; G.phase = 'over'; G.endT = 1.4; G.res = { res: G.ok ? 'out' : 'hit', dive: G.dive, perfect: G.perfect }; G.msg = { txt: G.ok ? '아웃!' : '세이프…', col: G.ok ? P.y3 : P.dn, big: 3, t: 0, sub: G.ok ? (G.perfect ? '완벽한 송구' : '') : '실점 허용' }; Sound.play(G.ok ? 'roar' : 'down'); if (G.ok) shake(2); } }
       if (G.phase === 'over') { G.endT -= dt; if (G.endT <= 0 && !G.ended) { G.ended = 1; o.onEnd(G.res); } }
     },
-    down(p) { if (G.phase === 'gauge') return tap(); ptr = p; if (G.phase === 'live' || G.phase === 'pre') G.tgt = [p.x + G.cam.x - 160, p.y + G.cam.y - 74]; },
-    move(p) { if (ptr && ptr.id === p.id) { ptr = p; if (G.phase === 'live' || G.phase === 'pre') G.tgt = [p.x + G.cam.x - 160, p.y + G.cam.y - 74]; } },
+    down(p) { if (G.phase === 'gauge') return tap(); ptr = p; if (G.phase === 'live' || G.phase === 'pre') G.tgt = FB.snap ? G.mark.slice() : [p.x + G.cam.x - 160, p.y + G.cam.y - 74]; },
+    move(p) { if (ptr && ptr.id === p.id) { ptr = p; if (!FB.snap && (G.phase === 'live' || G.phase === 'pre')) G.tgt = [p.x + G.cam.x - 160, p.y + G.cam.y - 74]; } },
     up(p) { if (ptr && ptr.id === p.id) ptr = null; },   // 손을 떼도 목표까지 계속 달림
     key(code) { if (code === 'Space') tap(); },
     draw(c) {
@@ -122,7 +124,7 @@ Scenes.field = (o) => {
       if (fx) { const [tx, ty] = W2S(cam, fx[0], fx[1]); drawBall(c, tx, ty - Math.sin(Math.min(1, G.thr.u) * Math.PI) * 6, 1.5); }
       // 손가락 목표
       fieldHUD(c, o, IF ? '수비 위기 · 유격수' : '수비 위기 · 중견수');
-      if (G.phase === 'pre' || (G.phase === 'live' && G.t < 1.5)) { rect(c, 0, 128, LW, 16, 'rgba(10,14,36,0.75)'); text(c, IF ? '땅볼! 노란 원을 탭하면 달려감' : '뜬공! 노란 원을 탭하면 달려감', 160, 130, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
+      if (G.phase === 'pre' || (G.phase === 'live' && G.t < 1.5)) { rect(c, 0, 128, LW, 16, 'rgba(10,14,36,0.75)'); text(c, '화면을 탭하면 노란 원으로 달려감!', 160, 130, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
       if (G.phase === 'gauge') gauge(c, G.gauge);
       drawMsg(c, G.msg);
     },
