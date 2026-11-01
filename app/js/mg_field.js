@@ -34,9 +34,9 @@ Scenes.field = (o) => {
   const start = IF ? [205, 278] : [240, 168];
   const me = { x: start[0], y: start[1], dir: -Math.PI / 2, fr: 0, dive: 0 };
   // 수비 판정 상수 (v1.3 완화: 탭 이동·카메라 고정·목표 표시와 함께)
-  // v1.5: 화면 아무 데나 탭 = 노란 원으로 자동 달리기, 게이지 더 넓고 느리게
+  // v1.5.2: 탭한 지점으로 달리기(자동 이동 없음), 공·게이지 느리게, 포구 범위 넓게
   const FB = window.BAL_FLD || { spdIF: 50, spdOF: 48, spdK: 24, catch0: 8, catchK: 4, dive0: 10, diveK: 5, grSpd: 60, flyDur: 3.0, pre: 1.0,
-    gIF: 0.36, gOF: 0.32, gK: 0.14, perIF: 2.2, perOF: 2.4, perf: 0.09, snap: true };
+    gIF: 0.36, gOF: 0.32, gK: 0.14, perIF: 2.2, perOF: 2.4, perf: 0.09, snap: false };   // snap=true면 아무 데나 탭해도 노란 원으로 자동 이동 (v1.5에서 써봤다가 뺌)
   const spd = (IF ? FB.spdIF : FB.spdOF) + FB.spdK * st.def / 99;
   const EZ = S.easy ? 1.25 : 1; const catchR = (FB.catch0 + FB.catchK * st.def / 99) * shift * EZ, diveR = catchR + (FB.dive0 + FB.diveK * st.def / 99) * shift;
   const G = { phase: 'pre', t: 0, ball: null, target: null, gauge: null, res: null, msg: null, endT: 0, runner: null, thr: null, perfect: false };
@@ -126,7 +126,7 @@ Scenes.field = (o) => {
       if (fx) { const [tx, ty] = W2S(cam, fx[0], fx[1]); drawBall(c, tx, ty - Math.sin(Math.min(1, G.thr.u) * Math.PI) * 6, 1.5); }
       // 손가락 목표
       fieldHUD(c, o, IF ? '수비 위기 · 유격수' : '수비 위기 · 중견수');
-      if (G.phase === 'pre' || (G.phase === 'live' && G.t < 1.5)) { rect(c, 0, 128, LW, 16, 'rgba(10,14,36,0.75)'); text(c, '화면을 탭하면 노란 원으로 달려감!', 160, 130, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
+      if (G.phase === 'pre' || (G.phase === 'live' && G.t < 1.5)) { rect(c, 0, 128, LW, 16, 'rgba(10,14,36,0.75)'); text(c, '노란 원을 탭하면 그쪽으로 달려감!', 160, 130, { f: 'b', col: P.w4, a: 'c', out: P.n0 }); }
       if (G.phase === 'gauge') gauge(c, G.gauge);
       drawMsg(c, G.msg);
     },
