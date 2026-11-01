@@ -9,7 +9,8 @@ Scenes.bat = (o) => {
   const lefty = S.me.hand === 'L';
   const ZONE = { x0: 149, x1: 171, y0: 92, y1: 118 }, REL = { x: 160, y: 69 };
   const CONTACT_T = 0.92, LEAD = 0.085;
-  const TB = window.BAL_BAT || { perf: 0.02, good: 0.11, good_hit: 0.62, qExp: 1.8, mid: 0.2, midFoul: 0.34, bloop: 0.05, weakFoul: 0.47, outZone: 0.5 };
+  const TB = window.BAL_BAT || { perf: 0.032, good: 0.15, good_hit: 0.62, qExp: 1.4,   // v1.6 넉넉하게 (v1.5까지 perf 0.02, good 0.11, qExp 1.8)
+    mid: 0.2, midFoul: 0.34, bloop: 0.05, weakFoul: 0.47, outZone: 0.5 };
   const WIN = (S.easy ? 1.25 : 1) * (0.65 + 0.7 * st.con / 99) * (1 - 0.18 * ace) * (tac === 'fullswing' ? 0.85 : 1) * (o.derby ? 1.15 : 1);
   const PERF = TB.perf * WIN * WIN, GOOD = TB.good * WIN;
   const PT = [{ n: '직구', kmh: 146, dur: 0.64, brk: 0, drop: 0 }, { n: '슬라이더', kmh: 133, dur: 0.72, brk: 9, drop: 2 }, { n: '커브', kmh: 119, dur: 0.84, brk: -4, drop: 9 }, { n: '포크', kmh: 131, dur: 0.74, brk: 0, drop: 10 }];

@@ -9,7 +9,7 @@ const look = S => ({ skin: S.me.skin, num: S.me.num });
 // 코치 튜토리얼 대사 (처음 한 번씩만. 타이틀 '튜토리얼 다시 보기'로 초기화)
 const TUT = {
   start: ['구단주님, 첫 경기 전에 몇 가지만 알려드리겠습니다. 나성범, 김도영도 다 지켜보고 있습니다.', '경기는 대부분 전광판 빨리감기로 흘러갑니다. 구단주님이 직접 뛰는 건 "승부처"뿐입니다.', '승부처는 한 경기에 최소 3번. 타격, 수비, 홈 쇄도, 도루 중 하나가 나옵니다.'],
-  brief: ['경기 전엔 작전 카드를 한 장 고릅니다. 효과는 이번 경기에만 있습니다.', '오른쪽 위 게이지가 팬 신뢰입니다. 이기면 오르고, 실력 없이 높은 타순에 서면 떨어집니다.', '신뢰가 0이 되면 감독 권한은 제가 맡습니다. 15, 30, 45가 되면 하나씩 돌려드리죠.', '처음이시니 "타격 연습"으로 감부터 잡아보시죠. 그다음 카드를 고르고 경기 시작입니다.'],
+  brief: ['경기 전엔 작전 카드를 한 장 고릅니다. 효과는 이번 경기에만 있습니다.', '오른쪽 위 게이지가 팬 신뢰입니다. 이기면 오르고, 실력 없이 높은 타순에 서면 떨어집니다.', '신뢰가 0이 되면 감독 권한은 제가 맡습니다. 15, 30, 45가 되면 하나씩 돌려드리죠.', '처음이시니 오른쪽 "연습"에서 타격·수비·홈 쇄도·도루를 한 번씩 해보시죠. 기록엔 안 남습니다. 그다음 카드를 고르고 경기 시작입니다.'],
   c_bat: ['타석입니다. 공이 던져지면 큰 원이 존 쪽으로 줄어듭니다. 그 원이 가운데 원에 닿는 순간, 화면 아무 데나 탭하면 스윙합니다.', '원이 초록색이면 맞힐 수 있고, 노란색이면 "저스트!", 무조건 안타입니다. 위치는 신경 쓰지 마십시오.', '테두리가 파란 공은 볼입니다. 참으면 볼넷도 노릴 수 있죠. 선구가 높을수록 일찍 보입니다.', '오른쪽 위 번트 버튼을 누르고 기다리면 번트를 댑니다. 발이 빠르면 내야 안타도 됩니다.'],
   c_fld_IF: ['수비 위기입니다. 땅볼이 구단주님 쪽으로 옵니다.', '노란 원이 공을 막을 자리입니다. 노란 원을 탭하면 그곳으로 달려갑니다. 손은 떼도 되고, 끌면 목표가 따라옵니다.', '잡으면 1루 송구 게이지가 나옵니다. 바늘이 초록일 때 탭. 가운데 노란 칸이면 무조건 아웃입니다.'],
   c_fld_OF: ['수비 위기입니다. 뜬공이 구단주님 쪽으로 날아옵니다.', '노란 원이 공이 떨어질 자리입니다. 노란 원을 탭하면 그곳으로 달려갑니다. 손은 떼도 되고, 끌면 목표가 따라옵니다.', '잡으면 홈 송구 게이지가 나옵니다. 바늘이 초록일 때 탭. 가운데 노란 칸이면 무조건 아웃입니다.'],
@@ -19,6 +19,7 @@ const TUT = {
   manage: ['경기가 끝나면 팀 관리입니다. 타순, 기용, 훈련 세 가지입니다.', '타순: 칸을 눌러 구단주님 자리를 정합니다. 노란 테두리가 제 추천이고, 타순이 높을수록 승부처가 많아집니다.', '다만 실적보다 2칸 넘게 높이 서면 "낙하산"이라 팬 신뢰가 깎입니다. 4번은 원래 김도영 자리라는 걸 팬들이 다 압니다.', '기용: 땀 흘리는 선수는 지친 겁니다. 김도영이라도 지치면 쉬게 해야 합니다. 한 명 쉬게 하면 팀도 강해지고 팬들도 좋아합니다.', '훈련: 포인트로 능력치를 올립니다. 팀 훈련은 팀 전력을 조금씩 올립니다.'],
   lock: ['팬 신뢰가 바닥났습니다. 당분간 라인업은 제가 짜겠습니다. 구단주님은 9번으로 계속 뛰시고요.', '이기면 신뢰가 돌아옵니다. 15, 30, 45가 되면 타순, 기용, 훈련 순서로 돌려드리죠.'],
   event: ['구단주님 본업 쪽 소식이군요. 고르는 대로 결과가 달라집니다.'],
+  practice: ['연습장입니다. 승부처에서 나오는 네 가지를 미리 해볼 수 있습니다.', '여기서 한 건 기록에도, 팬 신뢰에도 안 남습니다. 마음껏 실수하십시오.'],
   allstar: ['올스타 브레이크입니다. 홈런 더비에서 넘긴 만큼 파워가 오릅니다. 쉬는 동안 선수들 컨디션도 회복됩니다.'],
   post: ['가을야구입니다. 단기전에선 상대 에이스가 자주 나옵니다.', '한국시리즈를 우승하고 승부처 성공률이 60%를 넘으면 MVP입니다.'],
 };
@@ -220,15 +221,50 @@ Scenes.brief = () => {
       text(c, '작전 카드 1장 선택', 8, 95, { f: 's', col: P.n6 });
       cards.forEach((cd, i) => { const x = 6 + i * 72, y = 106; card(c, x, y, 69, 41, cd.name, cd.desc, { sel: sel === i, icon: cd.icon, band: cd.id === 'normal' ? P.n3 : P.r2 }); hit('cd' + i, x, y, 69, 41, () => { sel = i; Sound.play('card'); }); });
       btn(c, 'start', 230, 120, 84, 22, '경기 시작', () => { S.tactic = cards[Math.max(0, sel)].id; saveGame(); go(Scenes.match(fx, ace)); }, { disabled: sel < 0 });
-      if (first) btn(c, 'practice', 230, 98, 84, 16, '타격 연습', () => go(Scenes.bat({ practice: true, sit: { inn: 1, top: false, outs: 0, bases: [false, false, false], kia: 0, opp: 0 }, opp: fx.opp, theme: fx.home ? 'home' : 'away', onEnd: () => go(self) })), { kind: 'gold', f: 's' });
-      else { btn(c, 'stand', 230, 98, 40, 16, '순위', () => go(Scenes.standings(() => go(self))), { kind: 'navy', f: 's' });
-        btn(c, 'quit', 274, 98, 40, 16, '저장', () => { saveGame(); go(Scenes.title()); }, { kind: 'ghost', f: 's' }); }
+      btn(c, 'practice', 230, 98, 30, 16, '연습', () => go(Scenes.practice(fx, () => go(self))), { kind: first ? 'gold' : 'navy', f: 's' });
+      btn(c, 'stand', 262, 98, 26, 16, '순위', () => go(Scenes.standings(() => go(self))), { kind: 'navy', f: 's' });
+      btn(c, 'quit', 290, 98, 24, 16, '저장', () => { saveGame(); go(Scenes.title()); }, { kind: 'ghost', f: 's' });
     },
   };
   return self;
 };
 const clutchRange = slot => { const nb = K.BAL.clutchByTier[slot]; const lo = Math.max(3, Math.min(...nb)), hi = Math.max(3, Math.max(...nb)); return lo === hi ? `${lo}번` : `${lo}~${hi}번`; };
 function bustMini(c, x, y) { const b = G_.bustSprite('coach', 0, 0); c.drawImage(b, 4, 0, 40, 34, x - 6, y, 40, 34); }
+
+// ============================================================================
+// 연습장: 미니게임 4종 (기록에 안 남음)
+// ============================================================================
+Scenes.practice = (fx, back) => {
+  const S = App.S; let last = null; const theme = fx.home ? 'home' : 'away';
+  const sit = (o) => ({ inn: 5, top: false, outs: 1, bases: [false, false, false], kia: 2, opp: 2, ...o });
+  const base = () => ({ S, ace: false, stats: K.effStats(S), tactic: 'normal', opp: fx.opp, home: fx.home, trust: S.trust, theme });
+  const done = (name, ok) => res => { last = { name, ok: ok(res), res }; go(self); };
+  const fldName = S.me.pos === 'OF' ? '외야 뜬공' : '내야 땅볼';
+  const ITEMS = [
+    { id: 'pBat', icon: 'bat', name: '타격', d: '공 8개. 원이 닿을 때 탭', go: () => Scenes.bat({ ...base(), practice: true, sit: sit({}), onEnd: () => { last = { name: '타격', txt: '타격 연습 끝' }; go(self); } }) },
+    { id: 'pFld', icon: 'glove', name: '수비 위기', d: fldName + ' → 송구', go: () => Scenes.field({ ...base(), c: { kind: 'fld' }, sit: sit({ top: true, bases: [false, true, false] }), onEnd: done('수비', r => r.res === 'out') }) },
+    { id: 'pRun', icon: 'shoe', name: '홈 쇄도', d: '3루 밟는 순간 출발 버튼', go: () => Scenes.run({ ...base(), c: { kind: 'run', depth: Math.random(), arm: Math.random() }, sit: sit({ bases: [false, true, false] }), onEnd: done('홈 쇄도', r => r.res === 'safe') }) },
+    { id: 'pStl', icon: 'shoe', name: '도루', d: '다리 들 때 탭', go: () => Scenes.steal({ ...base(), c: { kind: 'steal', feints: (Math.random() * 3) | 0 }, sit: sit({ bases: [true, false, false] }), onEnd: done('도루', r => r.res === 'safe') }) },
+  ];
+  const self = {
+    enter() { Coach.once('practice', TUT.practice); },
+    draw(c) {
+      menuBg(c, S.trust, 0.75); header(c, '연습장', '기록·신뢰에 안 남음');
+      ITEMS.forEach((it, i) => {
+        const x = 8 + (i % 2) * 154, y = 24 + Math.floor(i / 2) * 44;
+        const pr = hit(it.id, x, y, 150, 40, () => go(it.go()));
+        G_.panel(c, x, y + (pr ? 1 : 0), 150, 40, { bg: P.n2, br: P.n4 });
+        G_.icon(c, it.icon, x + 8, y + 9 + (pr ? 1 : 0)); text(c, it.name, x + 22, y + 6 + (pr ? 1 : 0), { f: 'b', col: P.y3 });
+        text(c, it.d, x + 8, y + 23 + (pr ? 1 : 0), { f: 's', col: P.w2 });
+      });
+      G_.panel(c, 8, 116, 214, 28, { bg: P.n1 });
+      if (last) text(c, last.txt || `${last.name}: ${last.ok ? '성공!' : '실패… 다시 해보세요'}`, 16, 124, { f: 's', col: last.txt ? P.w3 : last.ok ? P.up : P.dn });
+      else text(c, '해보고 싶은 걸 누르세요', 16, 124, { f: 's', col: P.w1 });
+      btn(c, 'back', 230, 122, 84, 20, '브리핑으로', back);
+    },
+  };
+  return self;
+};
 
 // ============================================================================
 // 경기 결과 → 보상 카드

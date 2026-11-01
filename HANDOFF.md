@@ -1,4 +1,4 @@
-# 인수인계 설명서 — 『나는 타자겸 감독이 되었습니다』 v1.5
+# 인수인계 설명서 — 『나는 타자겸 감독이 되었습니다』 v1.6
 
 > **이 문서를 받은 AI에게**: 이 저장소 하나에 게임·시뮬·테스트 도구·문서가 다 있다. 이 문서만 읽으면 구조를 이해하고 고칠 수 있게 썼다.
 > 게임 기획(무엇을·왜)은 `docs/DESIGN.md`, 그림·소리 목록은 `docs/ASSETS.md`. **코드를 고치기 전에 §12 "자주 하는 작업"과 §13 "함정"을 먼저 읽을 것.**
@@ -199,7 +199,7 @@ while ((e = M.next()).type !== 'end') {
 | `cheerBuff` | 0.04 | 홈 응원 버프 |
 | `trust` | `{start:50, win:5, star:4, care:2, bad:-8, streak:-4, parachute:-6, unlock:[15,30,45]}` | 팬 신뢰 |
 
-미니게임 판정 상수는 각 미니게임 파일 안에 있다. 타격 타이밍 링은 `mg_bat.js`의 `RING`(중심·목표 반지름·시작 반지름)과 `drawTimingRing`(색 기준은 판정 폭과 같은 `PERF`/`GOOD`). 타격은 `mg_bat.js`의 `TB`(`perf 0.02, good 0.11, good_hit 0.62, qExp 1.8, mid 0.2, midFoul 0.34, bloop 0.05, weakFoul 0.47, outZone 0.5`)와 `WIN`(컨택 배율), 수비는 `mg_field.js`의 `FB`(`window.BAL_FLD`로 덮어쓰기 가능: 이동 속도·포구/다이빙 반경·타구 속도·체공·게이지 폭과 주기), 주루·도루는 각 장면 맨 위 상수.
+미니게임 판정 상수는 각 미니게임 파일 안에 있다. 타격 타이밍 링은 `mg_bat.js`의 `RING`(중심·목표 반지름·시작 반지름)과 `drawTimingRing`(색 기준은 판정 폭과 같은 `PERF`/`GOOD`). 타격은 `mg_bat.js`의 `TB`(`perf 0.032, good 0.15, good_hit 0.62, qExp 1.4, mid 0.2, midFoul 0.34, bloop 0.05, weakFoul 0.47, outZone 0.5`)와 `WIN`(컨택 배율), 수비는 `mg_field.js`의 `FB`(`window.BAL_FLD`로 덮어쓰기 가능: 이동 속도·포구/다이빙 반경·타구 속도·체공·게이지 폭과 주기), 주루·도루는 각 장면 맨 위 상수.
 
 ## 5. 화면 · 흐름 (`scenes.js`, `match.js`)
 | 장면 | 생성 | 주요 버튼 id |
@@ -207,7 +207,8 @@ while ((e = M.next()).type !== 'end') {
 | 타이틀 | `Scenes.title()` | `new, cont, ttl, snd, tut` |
 | 타자 만들기 | `Scenes.create()` | `name, skinL/R, handL/R, posL/R, numL/R, easyL/R, ok, back`. 이름 입력은 숨겨진 `<input id="nameIn">`에 포커스 |
 | 오프닝 | `Scenes.opening()` | `adv`(화면 전체), `skip` |
-| 브리핑 | `Scenes.brief()` | `cd0~2`(작전 카드), `start`, `practice`(첫 경기만), `stand`, `quit` |
+| 브리핑 | `Scenes.brief()` | `cd0~2`(작전 카드), `start`, `practice`(연습장), `stand`, `quit` |
+| 연습장 | `Scenes.practice(fixture, back)` | `pBat, pFld, pRun, pStl, back`. 미니게임을 연습 옵션으로 띄우고 결과만 표시(기록·신뢰 영향 없음) |
 | 경기 | `Scenes.match(fixture, ace)` | `cstart`(승부처 시작) |
 | 미니게임 | `Scenes.bat/field/run/steal(opts)` | `bunt`, `stop` |
 | 결과 | `Scenes.result(M)` | `nx`/`nx2` → 보상 단계 `rw0~2`, `take` |
@@ -255,7 +256,7 @@ iOS는 첫 터치 때 `Sound.unlock()`으로 오디오를 깨움(포인터·터�
 ## 9. 코치 튜토리얼 (`Coach` in main.js, 대사는 `TUT` in scenes.js)
 - `Coach.once(key, pages[], then?)`: `Meta.tut[key]`가 없을 때만 말풍선을 띄우고 기록. 이미 봤으면 `then` 즉시 실행
 - 말풍선이 떠 있는 동안 장면 `update`가 멈추고(미니게임 공이 안 날아옴) 입력이 막힌다
-- 키: `start`(+`brief` 묶음) / `c_bat` / `c_fld_IF` / `c_fld_OF` / `c_run` / `c_steal` / `result` / `manage` / `lock` / `event` / `allstar` / `post`. 미니게임 키는 각 미니게임 장면의 `enter()`에서 호출
+- 키: `start`(+`brief` 묶음) / `practice` / `c_bat` / `c_fld_IF` / `c_fld_OF` / `c_run` / `c_steal` / `result` / `manage` / `lock` / `event` / `allstar` / `post`. 미니게임 키는 각 미니게임 장면의 `enter()`에서 호출
 - 대사 톤: 코치는 존댓말, 구단주를 "구단주님"이라 부름. '~노' 어미·심한 욕 금지. 실명 사용 가능
 
 ## 10. 테스트 · 제작 도구 (`tools/`, 전부 저장소 어디서 실행해도 됨)
@@ -339,3 +340,4 @@ e2e 봇 실력: 고수 `jt .045, field.react .35`, 보통 `.075 / .5`, 초보 `.
 | v1.3 | 수비 조작 변경(탭 = 목표 지점 이동, 손 떼도 계속), 타구 중 카메라 고정, '여기로' 목표 원, 판정 완화(`FB`), KIA 기본 전력 0.435 |
 | v1.4 | 타격 타이밍 링(`drawTimingRing`), 화면 맞춤이 안전 여백 패딩을 빼고 계산, 타격 장면 디버그 훅 `scene._G` |
 | v1.5 | 수비 공·게이지 느리게(땅볼 60, 뜬공 3초, 바늘 2.2~2.4초), 느린 땅볼 무한 굴림 수정. 자동 이동(`FB.snap`)은 넣었다가 재민 피드백으로 끔(기본 false) |
+| v1.6 | 타격 판정 넉넉하게(`TB.perf` 0.032, `good` 0.15, `qExp` 1.4), 연습장 `Scenes.practice`(미니게임 4종), 시뮬 `MEAS.bat` 갱신 |
